@@ -1,0 +1,8 @@
+*.asv
+*.DS_Store
+**/slprj/**
+*.slxc
+*.autosave
+*.original
+*.pdf
+*.png
