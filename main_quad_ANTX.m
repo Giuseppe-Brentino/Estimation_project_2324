@@ -122,45 +122,45 @@ identification.covariance = getcov(estimated_model);
 estimation_error = (identification.parameters-real_parameters) ./ real_parameters * 100;
 
 %%%%%%%%%%%%%%%%%%%%% TEMPORANEO - DA AGGIUSTARE %%%%%%%%%%%%%%%%%%%%%%%%%%
-% validation 
-
-seed.x = 5;
-seed.vx = 6;
-seed.theta = 7;
-seed.q = 8;
-simulation = sim('Simulator_Single_Axis');
-
-time = 0:sample_time:simulation_time;
-
-data = struct;
-data.ax = simulation.ax.Data;
-data.q = simulation.q.Data;
-data.Mtot = simulation.Mtot.Data;
-
-input = data.Mtot;              % Normalized control moment
-output = [data.q data.ax];      % Measured acceleration and pitch rate
-
-real_sim = iddata(output, input, sample_time); 
-
-A = estimated_model.A;
-B = estimated_model.B;
-C = [1 0 0 ; estimated_model.C(1,:) ; 0 0 1 ; estimated_model.C(2,:)];
-D = [0; 0 ; estimated_model.D];
-simulation = sim('Simulator_Single_Axis');
-time = 0:sample_time:simulation_time;
-
-data = struct;
-data.ax = simulation.ax.Data;
-data.q = simulation.q.Data;
-data.Mtot = simulation.Mtot.Data;
-
-input = data.Mtot;              % Normalized control moment
-output = [data.q data.ax];      % Measured acceleration and pitch rate
-
-est_sim = iddata(output, input, sample_time);
-
-figure
-compare(real_sim,est_sim)
+% % validation 
+% 
+% seed.x = 5;
+% seed.vx = 6;
+% seed.theta = 7;
+% seed.q = 8;
+% simulation = sim('Simulator_Single_Axis');
+% 
+% time = 0:sample_time:simulation_time;
+% 
+% data = struct;
+% data.ax = simulation.ax.Data;
+% data.q = simulation.q.Data;
+% data.Mtot = simulation.Mtot.Data;
+% 
+% input = data.Mtot;              % Normalized control moment
+% output = [data.q data.ax];      % Measured acceleration and pitch rate
+% 
+% real_sim = iddata(output, input, sample_time); 
+% 
+% A = estimated_model.A;
+% B = estimated_model.B;
+% C = [1 0 0 ; estimated_model.C(1,:) ; 0 0 1 ; estimated_model.C(2,:)];
+% D = [0; 0 ; estimated_model.D];
+% simulation = sim('Simulator_Single_Axis');
+% time = 0:sample_time:simulation_time;
+% 
+% data = struct;
+% data.ax = simulation.ax.Data;
+% data.q = simulation.q.Data;
+% data.Mtot = simulation.Mtot.Data;
+% 
+% input = data.Mtot;              % Normalized control moment
+% output = [data.q data.ax];      % Measured acceleration and pitch rate
+% 
+% est_sim = iddata(output, input, sample_time);
+% 
+% figure
+% compare(real_sim,est_sim)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% plots
@@ -194,6 +194,23 @@ title('Estimation error','Interpreter','latex')
 set(gca,'XTickLabel',parameters(:,1));
 ylim([-0.12 0.15])
 grid on
+
+%% TASK 2
+
+ estimated_model.C = [1 0 0 ; estimated_model.C(1,:) ; 0 0 1 ; estimated_model.C(2,:)];
+ estimated_model.D = [0; 0 ; estimated_model.D];
+ 
+
+
+
+
+
+
+
+
+
+
+
 
 
 %% END OF CODE
