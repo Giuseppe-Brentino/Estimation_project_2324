@@ -1,3 +1,4 @@
+function ctrl = parameters_controller ()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % QUADROTOR PARAMETERS - Controller                                       %
 % Authors:  Mattia Giurato (mattia.giurato@polimi.it)                     %
@@ -9,55 +10,58 @@
 
 %% Normalized mixer
 
-Kt = 0.25;
-Kq = 0.25;
-b = 2;
+ctrl.Kt = 0.25;
+ctrl.Kq = 0.25;
+ctrl.b = 2;
 
-mixer = [ -1/(4*Kt), -2^(1/2)/(4*Kt*b),  2^(1/2)/(4*Kt*b),  1/(4*Kq);
- -1/(4*Kt),  2^(1/2)/(4*Kt*b), -2^(1/2)/(4*Kt*b),  1/(4*Kq);
- -1/(4*Kt),  2^(1/2)/(4*Kt*b),  2^(1/2)/(4*Kt*b), -1/(4*Kq);
- -1/(4*Kt), -2^(1/2)/(4*Kt*b), -2^(1/2)/(4*Kt*b), -1/(4*Kq)];
+Kt_b = ctrl.Kt*ctrl.b;
+ctrl.mixer = [ -1/(4*ctrl.Kt), -2^(1/2)/(4*Kt_b),  2^(1/2)/(4*Kt_b),  1/(4*ctrl.Kq);
+    -1/(4*ctrl.Kt),  2^(1/2)/(4*Kt_b), -2^(1/2)/(4*Kt_b),  1/(4*ctrl.Kq);
+    -1/(4*ctrl.Kt),  2^(1/2)/(4*Kt_b),  2^(1/2)/(4*Kt_b), -1/(4*ctrl.Kq);
+    -1/(4*ctrl.Kt), -2^(1/2)/(4*Kt_b), -2^(1/2)/(4*Kt_b), -1/(4*ctrl.Kq)];
 
 %% Angular rate controller
 
 %q
-KF_Q = 0.0;
-KP_Q = 0.09;
-KI_Q = 0.21;
-KD_Q = 0.0016;
-M_MAX = 1;
-M_MIN = -1;
+ctrl.KF_Q = 0.0;
+ctrl.KP_Q = 0.09;
+ctrl.KI_Q = 0.21;
+ctrl.KD_Q = 0.0016;
+ctrl.M_MAX = 1;
+ctrl.M_MIN = -1;
 
-N_filter_rate = 100;
-sample_time = 1/250;
+ctrl.N_filter_rate = 100;
+ctrl.sample_time = 1/250;
 
 %% Attitude controller
 
 %theta
-KP_PITCH = 12;
-Q_MAX = 10; % 10 [rad/s] ~ 600 deg/s
-Q_MIN = -10;
+ctrl.KP_PITCH = 12;
+ctrl.Q_MAX = 10; % 10 [rad/s] ~ 600 deg/s
+ctrl.Q_MIN = -10;
 
 %% Velocity controller
 
-KF_X_DOT = 0.0;
-KP_X_DOT = 0.5;
-KI_X_DOT = 0.04;
-KD_X_DOT = 0;
+ctrl.KF_X_DOT = 0.0;
+ctrl.KP_X_DOT = 0.5;
+ctrl.KI_X_DOT = 0.04;
+ctrl.KD_X_DOT = 0;
 
-F_X_MIN = -1;
-F_X_MAX = 1; 
+ctrl.F_X_MIN = -1;
+ctrl.F_X_MAX = 1;
 
-N_filter_vel = 10;
+ctrl.N_filter_vel = 10;
 
 %% Position controller
 
-KP_X = 2;
+ctrl.KP_X = 2;
 
 % velocity setpoint saturation
-VEL_MIN = -10;
-VEL_MAX = 10;
+ctrl.VEL_MIN = -10;
+ctrl.VEL_MAX = 10;
 
 %% Baseline thrust (normalized)
 
-BASELINE_T = 0.4;
+ctrl.BASELINE_T = 0.4;
+
+end

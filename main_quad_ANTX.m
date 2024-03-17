@@ -70,13 +70,13 @@ delay.mixer = 1;
 
 %% Load controller parameters
 
-parameters_controller;                   
+ctrl = parameters_controller();                   
 
 %% M injection example (sweeep: first column time vector, secondo column time history of pitching moment) 
 
 load ExcitationM;
 
-SetPoint=[0,0];
+ctrl.SetPoint=[0,0];
 
 %% Values selected
 
@@ -88,7 +88,7 @@ simulation_time=t(end)-t(1);
 
 simulation = sim('Simulator_Single_Axis');
 
-time = 0:sample_time:simulation_time;
+time = 0:ctrl.sample_time:simulation_time;
 
 data = struct;
 data.ax = simulation.ax.Data;
@@ -100,7 +100,7 @@ data.Mtot = simulation.Mtot.Data;
 
 input = data.Mtot;              % Normalized control moment
 output = [data.q data.ax];      % Measured acceleration and pitch rate
-sim_data = iddata(output, input, sample_time); 
+sim_data = iddata(output, input, ctrl.sample_time); 
 data_fd = fft(sim_data); % output of the simulation in the frequency domain
 
 %%% FARSI COMMENTARE LA FUNZIONE DA CHATGPT
@@ -130,7 +130,7 @@ estimation_error = (identification.parameters-real_parameters) ./ real_parameter
 % seed.q = 8;
 % simulation = sim('Simulator_Single_Axis');
 % 
-% time = 0:sample_time:simulation_time;
+% time = 0:ctrl.sample_time:simulation_time;
 % 
 % data = struct;
 % data.ax = simulation.ax.Data;
@@ -140,14 +140,14 @@ estimation_error = (identification.parameters-real_parameters) ./ real_parameter
 % input = data.Mtot;              % Normalized control moment
 % output = [data.q data.ax];      % Measured acceleration and pitch rate
 % 
-% real_sim = iddata(output, input, sample_time); 
-% 
+% real_sim = iddata(output, input, ctrl.sample_time); 
+
 % A = estimated_model.A;
 % B = estimated_model.B;
 % C = [1 0 0 ; estimated_model.C(1,:) ; 0 0 1 ; estimated_model.C(2,:)];
 % D = [0; 0 ; estimated_model.D];
 % simulation = sim('Simulator_Single_Axis');
-% time = 0:sample_time:simulation_time;
+% time = 0:ctrl.sample_time:simulation_time;
 % 
 % data = struct;
 % data.ax = simulation.ax.Data;
@@ -157,7 +157,7 @@ estimation_error = (identification.parameters-real_parameters) ./ real_parameter
 % input = data.Mtot;              % Normalized control moment
 % output = [data.q data.ax];      % Measured acceleration and pitch rate
 % 
-% est_sim = iddata(output, input, sample_time);
+% est_sim = iddata(output, input, ctrl.sample_time);
 % 
 % figure
 % compare(real_sim,est_sim)
@@ -197,20 +197,25 @@ grid on
 
 %% TASK 2
 
- estimated_model.C = [1 0 0 ; estimated_model.C(1,:) ; 0 0 1 ; estimated_model.C(2,:)];
- estimated_model.D = [0; 0 ; estimated_model.D];
+clc
+ estimated_matrix.A = estimated_model.A;
+ estimated_matrix.B = estimated_model.B;
+ estimated_matrix.C = [1 0 0 ; estimated_model.C(1,:) ; 0 0 1 ; estimated_model.C(2,:)];
+ estimated_matrix.D = [0; 0 ; estimated_model.D];
  
+ eta0 = [0.1 10 80];
+ lb = [0.01; 0.01; 20];
+ ub = [125; 125; 90];
+ A_constr = [1 -1 0];
+ b_constr = 0;
+ 
+ % optimization
 
+options = optimoptions('fmincon','Display', 'iter');
+ [x,resnorm,residual,exitflag,output] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
+     options,estimated_matrix,ctrl,delay,seed,noise,odefun);
 
-
-
-
-
-
-
-
-
-
+ % lb,ub,A_constr,b_constr,[],
 
 
 %% END OF CODE
