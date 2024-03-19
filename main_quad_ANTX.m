@@ -8,7 +8,7 @@
 %
 % Further modified to include structure three-state identified longitudinal model
 % 06/01/23 ML
-% 
+%
 % Further modified to pick outputs with measurement error
 % 03/01/24 ML
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -35,11 +35,13 @@ Xd=-10.1647;
 
 Md=450.71;
 
-A=[Xu, Xq, -9.81; Mu, Mq, 0; 0, 1, 0];
+g = 9.81;
+
+A=[Xu, Xq, -g; Mu, Mq, 0; 0, 1, 0];
 
 B=[Xd; Md; 0];
 
-C=[1, 0, 0; 0, 1, 0; 0, 0, 1; Xu, Xq, 0]; 
+C=[1, 0, 0; 0, 1, 0; 0, 0, 1; Xu, Xq, 0];
 
 D=[0; 0; 0; Xd];
 
@@ -70,9 +72,9 @@ delay.mixer = 1;
 
 %% Load controller parameters
 
-ctrl = parameters_controller();                   
+ctrl = parameters_controller();
 
-%% M injection example (sweeep: first column time vector, secondo column time history of pitching moment) 
+%% M injection example (sweeep: first column time vector, secondo column time history of pitching moment)
 
 load ExcitationM;
 
@@ -100,7 +102,7 @@ data.Mtot = simulation.Mtot.Data;
 
 input = data.Mtot;              % Normalized control moment
 output = [data.q data.ax];      % Measured acceleration and pitch rate
-sim_data = iddata(output, input, ctrl.sample_time); 
+sim_data = iddata(output, input, ctrl.sample_time);
 data_fd = fft(sim_data); % output of the simulation in the frequency domain
 
 %%% FARSI COMMENTARE LA FUNZIONE DA CHATGPT
@@ -122,25 +124,25 @@ identification.covariance = getcov(estimated_model);
 estimation_error = (identification.parameters-real_parameters) ./ real_parameters * 100;
 
 %%%%%%%%%%%%%%%%%%%%% TEMPORANEO - DA AGGIUSTARE %%%%%%%%%%%%%%%%%%%%%%%%%%
-% % validation 
-% 
+% % validation
+%
 % seed.x = 5;
 % seed.vx = 6;
 % seed.theta = 7;
 % seed.q = 8;
 % simulation = sim('Simulator_Single_Axis');
-% 
+%
 % time = 0:ctrl.sample_time:simulation_time;
-% 
+%
 % data = struct;
 % data.ax = simulation.ax.Data;
 % data.q = simulation.q.Data;
 % data.Mtot = simulation.Mtot.Data;
-% 
+%
 % input = data.Mtot;              % Normalized control moment
 % output = [data.q data.ax];      % Measured acceleration and pitch rate
-% 
-% real_sim = iddata(output, input, ctrl.sample_time); 
+%
+% real_sim = iddata(output, input, ctrl.sample_time);
 
 % A = estimated_model.A;
 % B = estimated_model.B;
@@ -148,24 +150,24 @@ estimation_error = (identification.parameters-real_parameters) ./ real_parameter
 % D = [0; 0 ; estimated_model.D];
 % simulation = sim('Simulator_Single_Axis');
 % time = 0:ctrl.sample_time:simulation_time;
-% 
+%
 % data = struct;
 % data.ax = simulation.ax.Data;
 % data.q = simulation.q.Data;
 % data.Mtot = simulation.Mtot.Data;
-% 
+%
 % input = data.Mtot;              % Normalized control moment
 % output = [data.q data.ax];      % Measured acceleration and pitch rate
-% 
+%
 % est_sim = iddata(output, input, ctrl.sample_time);
-% 
+%
 % figure
 % compare(real_sim,est_sim)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% plots
 
-% % % % figure 
+% % % % figure
 % % % % plot(sensors_time,data.Mtot,"b")
 % % % % grid on
 % % % % hold on
@@ -174,14 +176,14 @@ estimation_error = (identification.parameters-real_parameters) ./ real_parameter
 % % % % title('Total Moment with excitation')
 % % % % grid on
 % % % % axis tight
-% % % % 
-% % % % figure 
+% % % %
+% % % % figure
 % % % % plot(sensors_time,data.ax)
 % % % % title('Longitudinal Acceleration')
 % % % % grid on
 % % % % axis tight
-% % % % 
-% % % % figure 
+% % % %
+% % % % figure
 % % % % plot(sensors_time,data.q)
 % % % % title('Pitch rate')
 % % % % grid on
@@ -196,31 +198,69 @@ ylim([-0.12 0.15])
 grid on
 
 %% TASK 2
-clc
- estimated_matrix.A = estimated_model.A;
- estimated_matrix.B = estimated_model.B;
- estimated_matrix.C = [1 0 0 ; estimated_model.C(1,:) ; 0 0 1 ; estimated_model.C(2,:)];
- estimated_matrix.D = [0; 0 ; estimated_model.D];
- 
- eta0 = [0.1 10 80];
- lb = [0.01; 0.01; 20];
- ub = [125; 125; 90];
- A_constr = [1 -1 0];
- b_constr = 0;
- 
- % optimization
+
+%define number of scenarios
+N_sim = 100;
+
+% initialize variables
+stoch.A = zeros(3,3,N_sim);
+stoch.B = zeros(3,1,N_sim);
+stoch.C = zeros(4,3,N_sim);
+stoch.D = zeros(4,1,N_sim);
+eta = zeros(3,N_sim);
+J = zeros(N_sim,1);
+
+%generate uncertain parameters
+stoch.params = mvnrnd(identification.parameters,identification.covariance,N_sim);
+
+% initial input sequence guess
+eta0 = [0.1 1 80];
+
+% constraints
+lb = [0.01; 0.01; 20];
+ub = [10; 10; 90];
+A_constr = [1 -1 0];
+b_constr = 0;
+
+for i = 1:N_sim
+    % build state-space matrices
+    stoch.A(:,:,i) = [stoch.params(i,1) stoch.params(i,2) -g;
+        stoch.params(i,3) stoch.params(i,4)  0;
+        0                 1         0];
+
+    stoch.B(:,:,i) = [stoch.params(i,5); stoch.params(i,6);  0;];
+
+    stoch.C(:,:,i) = [       1                  0          0;
+        0                  1          0;
+        0                  0          1;
+        stoch.params(i,1) stoch.params(i,2) 0];
+
+    stoch.D(:,:,i) = [0; 0 ; 0; stoch.params(i,5)];
+
+    estimated_matrix.A = stoch.A(:,:,i);
+    estimated_matrix.B = stoch.B(:,:,i);
+    estimated_matrix.C = stoch.C(:,:,i);
+    estimated_matrix.D = stoch.D(:,:,i);
+    % optimize input sequence for each model
+
+    opts = optimoptions(@fmincon,'Display','iter','UseParallel',false);
+    problem = createOptimProblem('fmincon','x0',eta0,'objective',...
+        @(eta)obj_function(eta,estimated_matrix,ctrl,delay,seed,noise,odefun),'lb',lb,'ub',ub,'options',opts);
+    ms = MultiStart;
+    [eta(:,i),J(i)] = run(ms,problem,20);
+end
+
+save RESULTS eta J stoch
+
+
+
+% optimization
 % options = optimoptions('fmincon','Display', 'iter');
 %  [x,resnorm,residual,exitflag,output] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
 %      options,estimated_matrix,ctrl,delay,seed,noise,odefun);
 
 
-% MultiStart optimization
-rng default % For reproducibility
-opts = optimoptions(@fmincon,'Display','iter');
-problem = createOptimProblem('fmincon','x0',eta0,'objective',...
-@(x)obj_function(x,estimated_matrix,ctrl,delay,seed,noise,odefun),'lb',lb,'ub',ub,'options',opts);
-ms = MultiStart;
-[x,f] = run(ms,problem,20)
+
 
 
 %% END OF CODE
