@@ -196,7 +196,6 @@ ylim([-0.12 0.15])
 grid on
 
 %% TASK 2
-
 clc
  estimated_matrix.A = estimated_model.A;
  estimated_matrix.B = estimated_model.B;
@@ -210,12 +209,18 @@ clc
  b_constr = 0;
  
  % optimization
+% options = optimoptions('fmincon','Display', 'iter');
+%  [x,resnorm,residual,exitflag,output] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
+%      options,estimated_matrix,ctrl,delay,seed,noise,odefun);
 
-options = optimoptions('fmincon','Display', 'iter');
- [x,resnorm,residual,exitflag,output] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
-     options,estimated_matrix,ctrl,delay,seed,noise,odefun);
 
- % lb,ub,A_constr,b_constr,[],
+% MultiStart optimization
+rng default % For reproducibility
+opts = optimoptions(@fmincon,'Display','iter');
+problem = createOptimProblem('fmincon','x0',eta0,'objective',...
+@(x)obj_function(x,estimated_matrix,ctrl,delay,seed,noise,odefun),'lb',lb,'ub',ub,'options',opts);
+ms = MultiStart;
+[x,f] = run(ms,problem,20)
 
 
 %% END OF CODE
