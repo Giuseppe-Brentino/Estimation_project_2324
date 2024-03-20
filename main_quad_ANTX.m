@@ -198,9 +198,9 @@ ylim([-0.12 0.15])
 grid on
 
 %% TASK 2
-
+rng default 
 %define number of scenarios
-N_sim = 100;
+N_sim = 3;
 
 % initialize variables
 stoch.A = zeros(3,3,N_sim);
@@ -222,6 +222,7 @@ ub = [10; 10; 90];
 A_constr = [1 -1 0];
 b_constr = 0;
 
+tic
 for i = 1:N_sim
     % build state-space matrices
     stoch.A(:,:,i) = [stoch.params(i,1) stoch.params(i,2) -g;
@@ -243,13 +244,13 @@ for i = 1:N_sim
     estimated_matrix.D = stoch.D(:,:,i);
     % optimize input sequence for each model
 
-    opts = optimoptions(@fmincon,'Display','iter','UseParallel',false);
+    opts = optimoptions(@fmincon,'Display','iter','Algorithm','sqp','UseParallel',false);
     problem = createOptimProblem('fmincon','x0',eta0,'objective',...
         @(eta)obj_function(eta,estimated_matrix,ctrl,delay,seed,noise,odefun),'lb',lb,'ub',ub,'options',opts);
     ms = MultiStart;
-    [eta(:,i),J(i)] = run(ms,problem,20);
+    [eta(:,i),J(i)] = run(ms,problem,5);
 end
-
+toc
 save RESULTS eta J stoch
 
 
@@ -259,7 +260,18 @@ save RESULTS eta J stoch
 %  [x,resnorm,residual,exitflag,output] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
 %      options,estimated_matrix,ctrl,delay,seed,noise,odefun);
 
+%% Aggregate results
+input = [];
+sisw_output = [];
+for i=1:N_sim
+    estimated_matrixstoch.A = stoch.A(:,:,i);
+    estimated_matrixstoch.B = stoch.B(:,:,i);
+    estimated_matrixstoch.C = stoch.C(:,:,i);
+    estimated_matrixstoch.D = stoch.D(:,:,i);
+    [input, sisw_output] = aggregate_results(eta(:,i),estimated_matrixstoch,ctrl,delay,seed,noise,odefun); 
+    input(:,i)= input;
 
+end
 
 
 
