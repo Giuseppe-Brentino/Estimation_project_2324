@@ -17,8 +17,10 @@ clearvars;
 close all;
 clc;
 
-addpath('datasets','common','common/simulator-toolbox','common/simulator-toolbox/attitude_library','common/simulator-toolbox/trajectory_library');
+rng default;
 
+addpath('datasets','common','common/simulator-toolbox','common/simulator-toolbox/attitude_library','common/simulator-toolbox/trajectory_library');
+addpath('functions');
 %% Model parameters
 
 % Initial model (state: longitudinal velocity, pitch rate, pitch angle; input: normalised pitching moment; outputs: state and longitudinal acceleration)
@@ -87,7 +89,7 @@ t=ExcitationM(:,1);
 simulation_time=t(end)-t(1);
 
 %% Simulation
-
+set_param('Simulator_Single_Axis',"FastRestart","off");
 simulation = sim('Simulator_Single_Axis');
 
 time = 0:ctrl.sample_time:simulation_time;
@@ -203,23 +205,23 @@ grid on
 %possibilità di scelta del numero di modelli costruiti-> esempio usare
 %criterio di tellerenza
 
-rng default 
-%define number of scenarios
-N_sim = 3;
-
-% initialize variables
-stoch.A = zeros(3,3,N_sim);
-stoch.B = zeros(3,1,N_sim);
-stoch.C = zeros(4,3,N_sim);
-stoch.D = zeros(4,1,N_sim);
-eta = zeros(3,N_sim);
-J = zeros(N_sim,1);
+N_scenarios = 1;  % number of scenarios
+N_ic = 1;   % number of initial guesses for each optimization problem
+N_sim = N_scenarios*N_ic;
 
 %generate uncertain parameters
-stoch.params = mvnrnd(identification.parameters,identification.covariance,N_sim);
+stoch_params_temp = mvnrnd(identification.parameters,identification.covariance,N_scenarios);
+stoch_params = repelem(stoch_params_temp,N_ic,1);
 
-% initial input sequence guess
-eta0 = [0.1 1 80];
+% initialize model matrices
+stoch_A = zeros(3,3,N_sim);
+stoch_B = zeros(3,1,N_sim);
+stoch_C = zeros(4,3,N_sim);
+stoch_D = zeros(4,1,N_sim);
+
+% initialize results matrices
+eta =zeros(3,N_sim);
+J=zeros(N_sim,1);
 
 % constraints
 lb = [0.01; 0.01; 20];
@@ -227,71 +229,87 @@ ub = [10; 10; 90];
 A_constr = [1 -1 0];
 b_constr = 0;
 
+
+% initial input sequence guess
+%%%%%%%%%% DA DISCUTERE SE HA SENSO USARE SEMPRE LE STESS I.C. %%%%%%%%%%%%
+eta0_temp = lb + (ub-lb) .* rand(3,N_ic);
+eta0_mat = repmat(eta0_temp,1,N_scenarios);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% solver options
+opts = optimoptions(@fmincon,'Algorithm','sqp','Display','none');
 tic
-for i = 1:N_sim
+
+set_param('Simulator_Single_Axis',"FastRestart","on");
+st = struct;
+
+parfor i = 1:N_sim
+    
+    estimated_matrix = st;
     % build state-space matrices
-    stoch.A(:,:,i) = [stoch.params(i,1) stoch.params(i,2) -g;
-        stoch.params(i,3) stoch.params(i,4)  0;
+    stoch_A(:,:,i) = [stoch_params(i,1) stoch_params(i,2) -g;
+        stoch_params(i,3) stoch_params(i,4)  0;
         0                 1         0];
 
-    stoch.B(:,:,i) = [stoch.params(i,5); stoch.params(i,6);  0;];
+    stoch_B(:,:,i) = [stoch_params(i,5); stoch_params(i,6);  0;];
 
-    stoch.C(:,:,i) = [       1                  0          0;
+    stoch_C(:,:,i) = [       1                  0          0;
         0                  1          0;
         0                  0          1;
-        stoch.params(i,1) stoch.params(i,2) 0];
+        stoch_params(i,1) stoch_params(i,2) 0];
 
-    stoch.D(:,:,i) = [0; 0 ; 0; stoch.params(i,5)];
+    stoch_D(:,:,i) = [0; 0 ; 0; stoch_params(i,5)];
 
-    estimated_matrix.A = stoch.A(:,:,i);
-    estimated_matrix.B = stoch.B(:,:,i);
-    estimated_matrix.C = stoch.C(:,:,i);
-    estimated_matrix.D = stoch.D(:,:,i);
-    % optimize input sequence for each model
+    estimated_matrix.A = stoch_A(:,:,i);
+    estimated_matrix.B = stoch_B(:,:,i);
+    estimated_matrix.C = stoch_C(:,:,i);
+    estimated_matrix.D = stoch_D(:,:,i);
 
-    opts = optimoptions(@fmincon,'Display','iter','Algorithm','sqp','UseParallel',false); %usiamo algortimo sqp per volocizzare il tutto
-    problem = createOptimProblem('fmincon','x0',eta0,'objective',...
-        @(eta)obj_function(eta,estimated_matrix,ctrl,delay,seed,noise,odefun),'lb',lb,'ub',ub,'options',opts);
-    ms = MultiStart;
-    [eta(:,i),J(i)] = run(ms,problem,1);
+    % optimize input sequence 
+        eta0 = eta0_mat(:,i);
+      [eta(:,i),J(i),exitflag,~] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
+     opts,estimated_matrix,ctrl,delay,seed,noise,odefun);
+
+   % save input-output data
 end
-toc
+
+% store scenarios
+stoch.A = stoch_A;
+stoch.B = stoch_B;
+stoch.C = stoch_C;
+stoch.D = stoch_D;
+stoch.params = stoch_params;
+
+
 save RESULTS eta J stoch
-
-
-
-% optimization
-% options = optimoptions('fmincon','Display', 'iter');
-%  [x,resnorm,residual,exitflag,output] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
-%      options,estimated_matrix,ctrl,delay,seed,noise,odefun);
 
 %% Aggregate results
 
 input= cell(1,N_sim);
 output =cell(1,N_sim);
 time_sisw=cell(1,N_sim);
-   for i=1:N_sim
-    
+for i=1:N_sim 
+
     estimated_matrixstoch.A = stoch.A(:,:,i);
     estimated_matrixstoch.B = stoch.B(:,:,i);
     estimated_matrixstoch.C = stoch.C(:,:,i);
     estimated_matrixstoch.D = stoch.D(:,:,i);
-    [input_sisw, sisw_output] = aggregate_results(eta(:,i),estimated_matrixstoch,ctrl,delay,seed,noise,odefun); 
+    [input_sisw, sisw_output] = aggregate_results(eta(:,i),estimated_matrixstoch,ctrl,delay,seed,noise,odefun);
 
     input{i}=input_sisw;
-    output{i}=sisw_output;  
+    output{i}=sisw_output;
     time_sisw{i}=linspace(0,eta(3,i),length(input_sisw));
-   %  figure
-   % plot(time_sisw{i},input{i})
-   % title(sprintf('Input %dth',i))
-   % axis tight
-   % figure
-   % plot(time_sisw{i},output{i})
-   %  title(sprintf('Output %dth',i))
-   % axis tight
+    %  figure
+    % plot(time_sisw{i},input{i})
+    % title(sprintf('Input %dth',i))
+    % axis tight
+    % figure
+    % plot(time_sisw{i},output{i})
+    %  title(sprintf('Output %dth',i))
+    % axis tight
     Dev_standard_ax=std(sisw_output(:,1));
     Dev_standard_q=std(sisw_output(:,2));
-   end 
+end
 
 %Histogram Plot
 figure
@@ -320,7 +338,7 @@ title('Md')
 
 
 
-   
+
 
 
 %% END OF CODE

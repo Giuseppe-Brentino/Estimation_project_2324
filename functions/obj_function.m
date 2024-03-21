@@ -49,10 +49,4 @@ identification.covariance = getcov(estimated_model);
 %cost function
 J = trace(identification.covariance);
 
-% output data for postprocess
-if nargout == 2
-varargout{1} = data;
-end
-
-
 end
