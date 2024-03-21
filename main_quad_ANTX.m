@@ -198,6 +198,11 @@ ylim([-0.12 0.15])
 grid on
 
 %% TASK 2
+
+%Nell amontecarlo definire un criterio di uscita dal ciclo (togliere
+%possibilità di scelta del numero di modelli costruiti-> esempio usare
+%criterio di tellerenza
+
 rng default 
 %define number of scenarios
 N_sim = 3;
@@ -244,11 +249,11 @@ for i = 1:N_sim
     estimated_matrix.D = stoch.D(:,:,i);
     % optimize input sequence for each model
 
-    opts = optimoptions(@fmincon,'Display','iter','Algorithm','sqp','UseParallel',false);
+    opts = optimoptions(@fmincon,'Display','iter','Algorithm','sqp','UseParallel',false); %usiamo algortimo sqp per volocizzare il tutto
     problem = createOptimProblem('fmincon','x0',eta0,'objective',...
         @(eta)obj_function(eta,estimated_matrix,ctrl,delay,seed,noise,odefun),'lb',lb,'ub',ub,'options',opts);
     ms = MultiStart;
-    [eta(:,i),J(i)] = run(ms,problem,5);
+    [eta(:,i),J(i)] = run(ms,problem,1);
 end
 toc
 save RESULTS eta J stoch
@@ -261,18 +266,61 @@ save RESULTS eta J stoch
 %      options,estimated_matrix,ctrl,delay,seed,noise,odefun);
 
 %% Aggregate results
-input = [];
-sisw_output = [];
-for i=1:N_sim
+
+input= cell(1,N_sim);
+output =cell(1,N_sim);
+time_sisw=cell(1,N_sim);
+   for i=1:N_sim
+    
     estimated_matrixstoch.A = stoch.A(:,:,i);
     estimated_matrixstoch.B = stoch.B(:,:,i);
     estimated_matrixstoch.C = stoch.C(:,:,i);
     estimated_matrixstoch.D = stoch.D(:,:,i);
-    [input, sisw_output] = aggregate_results(eta(:,i),estimated_matrixstoch,ctrl,delay,seed,noise,odefun); 
-    input(:,i)= input;
+    [input_sisw, sisw_output] = aggregate_results(eta(:,i),estimated_matrixstoch,ctrl,delay,seed,noise,odefun); 
 
-end
+    input{i}=input_sisw;
+    output{i}=sisw_output;  
+    time_sisw{i}=linspace(0,eta(3,i),length(input_sisw));
+   %  figure
+   % plot(time_sisw{i},input{i})
+   % title(sprintf('Input %dth',i))
+   % axis tight
+   % figure
+   % plot(time_sisw{i},output{i})
+   %  title(sprintf('Output %dth',i))
+   % axis tight
+    Dev_standard_ax=std(sisw_output(:,1));
+    Dev_standard_q=std(sisw_output(:,2));
+   end 
 
+%Histogram Plot
+figure
+histogram(J)
+figure
+histogram(stoch.params(:,1))
+title('Xu')
+figure
+histogram(stoch.params(:,2))
+title('Xq')
+figure
+histogram(stoch.params(:,3))
+title('Mu')
+figure
+histogram(stoch.params(:,4))
+title('Mq')
+figure
+histogram(stoch.params(:,5))
+title('Xd')
+figure
+histogram(stoch.params(:,6))
+title('Md')
+
+
+
+
+
+
+   
 
 
 %% END OF CODE
