@@ -1,4 +1,4 @@
-function J = obj_function(eta0,estimated_model,ctrl,delay,seed,noise,odefun)
+function [J,varargout] = obj_function(eta0,estimated_model,ctrl,delay,seed,noise,odefun)
 
 % model parameters
 
@@ -49,6 +49,10 @@ identification.covariance = getcov(estimated_model);
 %cost function
 J = trace(identification.covariance);
 
+% output data for postprocess
+if nargout == 2
+varargout{1} = data;
+end
 
 
 end
