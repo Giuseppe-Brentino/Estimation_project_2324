@@ -205,8 +205,8 @@ grid on
 %possibilità di scelta del numero di modelli costruiti-> esempio usare
 %criterio di tellerenza
 
-N_scenarios = 1;  % number of scenarios
-N_ic = 1;   % number of initial guesses for each optimization problem
+N_scenarios = 2;  % number of scenarios
+N_ic = 2;   % number of initial guesses for each optimization problem
 N_sim = N_scenarios*N_ic;
 
 %generate uncertain parameters
@@ -220,8 +220,9 @@ stoch_C = zeros(4,3,N_sim);
 stoch_D = zeros(4,1,N_sim);
 
 % initialize results matrices
-eta =zeros(3,N_sim);
-J=zeros(N_sim,1);
+full_eta =zeros(3,N_sim);
+full_cost = zeros(N_sim,2);
+full_cost(:,1) = repelem(1:N_scenarios,N_ic)';
 
 % constraints
 lb = [0.01; 0.01; 20];
@@ -244,7 +245,7 @@ set_param('Simulator_Single_Axis',"FastRestart","on");
 st = struct;
 
 parfor i = 1:N_sim
-    
+
     estimated_matrix = st;
     % build state-space matrices
     stoch_A(:,:,i) = [stoch_params(i,1) stoch_params(i,2) -g;
@@ -265,13 +266,36 @@ parfor i = 1:N_sim
     estimated_matrix.C = stoch_C(:,:,i);
     estimated_matrix.D = stoch_D(:,:,i);
 
-    % optimize input sequence 
-        eta0 = eta0_mat(:,i);
-      [eta(:,i),J(i),exitflag,~] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
-     opts,estimated_matrix,ctrl,delay,seed,noise,odefun);
+    % display iteration
+    disp("Simulation " + i + " out of " + N_sim );
+    % optimize input sequence
+    eta0 = eta0_mat(:,i);
+    [full_eta(:,i),full_cost(i,2),exitflag,~] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
+        opts,estimated_matrix,ctrl,delay,seed,noise,odefun);
 
-   % save input-output data
+    % save input-output data
 end
+
+%% Cost function analysis
+
+% Compute optimal cost and input sequence per scenario
+cost = zeros(N_scenarios,1);
+eta = zeros(3,N_scenarios);
+
+counter = 0;
+for i = 1:N_ic:length(A(:,2))
+
+    counter = counter+1;
+
+    cost(counter) = min( full_cost(i:i+N_ic-1,2) );
+
+    index = find( full_cost(i:i+N_ic-1,2) == cost(counter) ) + (i-1);
+
+    eta(:,counter) = full_eta( :, index );
+
+end
+
+%% Aggregate results
 
 % store scenarios
 stoch.A = stoch_A;
@@ -283,12 +307,10 @@ stoch.params = stoch_params;
 
 save RESULTS eta J stoch
 
-%% Aggregate results
-
 input= cell(1,N_sim);
 output =cell(1,N_sim);
 time_sisw=cell(1,N_sim);
-for i=1:N_sim 
+for i=1:N_sim
 
     estimated_matrixstoch.A = stoch.A(:,:,i);
     estimated_matrixstoch.B = stoch.B(:,:,i);
