@@ -89,6 +89,7 @@ t=ExcitationM(:,1);
 simulation_time=t(end)-t(1);
 
 %% Simulation
+load_system('Simulator_Single_Axis');
 set_param('Simulator_Single_Axis',"FastRestart","off");
 simulation = sim('Simulator_Single_Axis');
 
