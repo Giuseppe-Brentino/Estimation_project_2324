@@ -227,7 +227,7 @@ full_cost(:,1) = repelem(1:N_scenarios,N_ic)';
 
 % constraints
 lb = [0.01; 0.01; 20];
-ub = [10; 10; 90];
+ub = [10; 50; 90];
 A_constr = [1 -1 0];
 b_constr = 0;
 
@@ -276,6 +276,7 @@ parfor i = 1:N_sim
 
     % save input-output data
 end
+toc
 
 %% Cost function analysis
 
@@ -283,8 +284,13 @@ end
 cost = zeros(N_scenarios,1);
 eta = zeros(3,N_scenarios);
 
+mean_cost=zeros(N_scenarios,1);
+std_cost=zeros(N_scenarios,1);
+mean_eta=zeros(3,N_scenarios);
+std_eta=zeros(3,N_scenarios);
+
 counter = 0;
-for i = 1:N_ic:length(A(:,2))
+for i = 1:N_ic:length(full_cost(:,2))
 
     counter = counter+1;
 
@@ -294,7 +300,16 @@ for i = 1:N_ic:length(A(:,2))
 
     eta(:,counter) = full_eta( :, index );
 
+    %Compute statistical parameters 
+    mean_cost(counter)=mean(cost(1:counter));
+    std_cost(counter)=std(cost(1:counter));
+    mean_eta(:,counter)=mean(eta(:,1:counter),2);
+    std_eta(:,counter)=std(eta(:,1:counter),0,2);
+
 end
+   
+
+
 
 %% Aggregate results
 
@@ -337,6 +352,8 @@ end
 %Histogram Plot
 figure
 histogram(J)
+title('J')
+
 figure
 histogram(stoch.params(:,1))
 title('Xu')
