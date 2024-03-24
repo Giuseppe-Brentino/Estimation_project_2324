@@ -280,7 +280,7 @@ toc
 
 %% Cost function analysis
 
-% Compute optimal cost and input sequence per scenario
+% Initialize variables
 cost = zeros(N_scenarios,1);
 eta = zeros(3,N_scenarios);
 
@@ -289,8 +289,16 @@ std_cost=zeros(N_scenarios,1);
 mean_eta=zeros(3,N_scenarios);
 std_eta=zeros(3,N_scenarios);
 
+scenario.A = zeros(3,3,N_scenarios);
+scenario.B = zeros(3,1,N_scenarios);
+scenario.C = zeros(4,3,N_scenarios);
+scenario.D = zeros(4,1,N_scenarios);
+
+% post-process of the optimization
 counter = 0;
 for i = 1:N_ic:length(full_cost(:,2))
+
+    % compute optimal cost and input for each scenario
 
     counter = counter+1;
 
@@ -300,85 +308,43 @@ for i = 1:N_ic:length(full_cost(:,2))
 
     eta(:,counter) = full_eta( :, index );
 
-    %Compute statistical parameters 
+    %Compute statistical parameters
     mean_cost(counter)=mean(cost(1:counter));
     std_cost(counter)=std(cost(1:counter));
     mean_eta(:,counter)=mean(eta(:,1:counter),2);
     std_eta(:,counter)=std(eta(:,1:counter),0,2);
 
-end
-   
-
-
-
-%% Aggregate results
-
-% store scenarios
-stoch.A = stoch_A;
-stoch.B = stoch_B;
-stoch.C = stoch_C;
-stoch.D = stoch_D;
-stoch.params = stoch_params;
-
-
-save RESULTS eta J stoch
-
-input= cell(1,N_sim);
-output =cell(1,N_sim);
-time_sisw=cell(1,N_sim);
-for i=1:N_sim
-
-    estimated_matrixstoch.A = stoch.A(:,:,i);
-    estimated_matrixstoch.B = stoch.B(:,:,i);
-    estimated_matrixstoch.C = stoch.C(:,:,i);
-    estimated_matrixstoch.D = stoch.D(:,:,i);
-    [input_sisw, sisw_output] = aggregate_results(eta(:,i),estimated_matrixstoch,ctrl,delay,seed,noise,odefun);
-
-    input{i}=input_sisw;
-    output{i}=sisw_output;
-    time_sisw{i}=linspace(0,eta(3,i),length(input_sisw));
-    %  figure
-    % plot(time_sisw{i},input{i})
-    % title(sprintf('Input %dth',i))
-    % axis tight
-    % figure
-    % plot(time_sisw{i},output{i})
-    %  title(sprintf('Output %dth',i))
-    % axis tight
-    Dev_standard_ax=std(sisw_output(:,1));
-    Dev_standard_q=std(sisw_output(:,2));
+    % save s-s matrices for each scenario
+    scenario.A(:,:,counter) = stoch_A(:,:,index);
+    scenario.B(:,:,counter) = stoch_B(:,:,index);
+    scenario.C(:,:,counter) = stoch_C(:,:,index);
+    scenario.D(:,:,counter) = stoch_D(:,:,index);
 end
 
-%Histogram Plot
-figure
-histogram(J)
-title('J')
+%% Compare effectivness of eta with each scenario
 
-figure
-histogram(stoch.params(:,1))
-title('Xu')
-figure
-histogram(stoch.params(:,2))
-title('Xq')
-figure
-histogram(stoch.params(:,3))
-title('Mu')
-figure
-histogram(stoch.params(:,4))
-title('Mq')
-figure
-histogram(stoch.params(:,5))
-title('Xd')
-figure
-histogram(stoch.params(:,6))
-title('Md')
+%%%% TO DO: AGGIUNGERE EXTRA INPUT OPZIONALE A OBJ_FUNCTION PER INDICE PER
+%%%% NON CALCOLARSI SEMPRE ESTIMATED MODEL
+cost_matrix = zeros(N_scenarios);
 
+for i = 1:N_scenarios       % iterate on eta
+    for j = 1:N_scenarios   % iterate on scenario
+        sim_matrix.A =  scenario.A(:,:,j);
+        sim_matrix.B =  scenario.B(:,:,j);
+        sim_matrix.C =  scenario.C(:,:,j);
+        sim_matrix.D =  scenario.D(:,:,j);
+        cost_matrix(i,j) = obj_function(eta(:,i),sim_matrix,ctrl,delay,seed,noise,odefun);
+    end
+end
 
+% compute eta that guarantees best worst-case performance
+  eta_wc_vect = max(cost_matrix,[],2);
+  [~,index] = min(eta_wc_vect);
+  eta_wc = eta(:,index);
 
+  % compute eta that guarantees best average performance
 
-
-
-
-
-
+  eta_avg_vect = mean(cost_matrix,2);
+  [~,index] = min(eta_avg_vect);
+  eta_avg = eta(:,index);
 %% END OF CODE

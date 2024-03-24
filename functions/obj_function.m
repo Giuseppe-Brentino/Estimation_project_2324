@@ -1,4 +1,4 @@
-function [J,varargout] = obj_function(eta0,estimated_model,ctrl,delay,seed,noise,odefun)
+function J = obj_function(eta0,estimated_model,ctrl,delay,seed,noise,odefun)
 
 % model parameters
 
