@@ -99,7 +99,7 @@ time = 0:ctrl.sample_time:simulation_time;
 
 %%% TODO FARSI COMMENTARE LA FUNZIONE DA CHATGPT
 odefun= 'drone_model';
-[identification estimation_error] = Model_identification(ExcitationM,model,ctrl,delay,seed,noise,odefun,simulation_time,real_parameters);
+[identification, estimation_error] = Model_identification(ExcitationM,model,ctrl,delay,seed,noise,odefun,simulation_time,real_parameters);
 
 %%%%%%%%%%%%%%%%%%%%% TEMPORANEO - DA AGGIUSTARE %%%%%%%%%%%%%%%%%%%%%%%%%%
 % % validation
@@ -252,7 +252,6 @@ parfor i = 1:N_sim
 
 end
 toc
-
 
 
 %% Cost function analysis

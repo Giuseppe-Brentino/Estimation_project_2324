@@ -18,8 +18,11 @@ ExcitationM=[excitation_time, excitation_value];
 
 [identification] = Model_identification(ExcitationM,model,ctrl,delay,seed,noise,odefun,simulation_time);
 
+normalized_cov = abs(100*diag(identification.covariance)./identification.parameters);
+
 %cost function
-J = trace(identification.covariance);
+J = sum(normalized_cov);
+
 
 if nargout==2
     varargout{1}=identification;
