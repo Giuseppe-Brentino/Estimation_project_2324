@@ -205,7 +205,8 @@ b_constr = 0;
 
 % initial input sequence guess
 %%%%%%%%%% DA DISCUTERE SE HA SENSO USARE SEMPRE LE STESS I.C. %%%%%%%%%%%%
-eta0_temp = lb + (ub-lb) .* rand(3,N_sim);
+eta0_mat = lb + (ub-lb) .* rand(3,N_sim);
+% eta0_mat = repmat(eta0_temp,1,N_scenarios);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % solver options
