@@ -177,12 +177,8 @@ grid on
 
 %% TASK 2
 
-%Nell amontecarlo definire un criterio di uscita dal ciclo (togliere
-%possibilità di scelta del numero di modelli costruiti-> esempio usare
-%criterio di tellerenza
-
-N_scenarios = 2;  % number of scenarios
-N_ic = 2;   % number of initial guesses for each optimization problem
+N_scenarios = 50;  % number of scenarios
+N_ic = 5;   % number of initial guesses for each optimization problem
 N_sim = N_scenarios*N_ic;
 
 %generate uncertain parameters
@@ -209,8 +205,7 @@ b_constr = 0;
 
 % initial input sequence guess
 %%%%%%%%%% DA DISCUTERE SE HA SENSO USARE SEMPRE LE STESS I.C. %%%%%%%%%%%%
-eta0_temp = lb + (ub-lb) .* rand(3,N_ic);
-eta0_mat = repmat(eta0_temp,1,N_scenarios);
+eta0_temp = lb + (ub-lb) .* rand(3,N_sim);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % solver options
@@ -302,32 +297,60 @@ end
 %%%% TO DO: AGGIUNGERE EXTRA INPUT OPZIONALE A OBJ_FUNCTION PER INDICE PER
 %%%% NON CALCOLARSI SEMPRE ESTIMATED MODEL
 cost_matrix = zeros(N_scenarios);
-
+theta_opt_matrix = zeros(6,N_scenarios);
 for i = 1:N_scenarios       % iterate on eta
     for j = 1:N_scenarios   % iterate on scenario
         sim_matrix.A =  scenario.A(:,:,j);
         sim_matrix.B =  scenario.B(:,:,j);
         sim_matrix.C =  scenario.C(:,:,j);
         sim_matrix.D =  scenario.D(:,:,j);
-        cost_matrix(i,j) = obj_function(eta_matrix(:,i),sim_matrix,ctrl,delay,seed,noise,odefun);
+        if i == j
+            [cost_matrix(i,j),identified_model] = obj_function(eta_matrix(:,i),sim_matrix,ctrl,delay,seed,noise,odefun);
+            theta_opt_matrix(:,i) = identified_model.parameters;
+        else
+            [cost_matrix(i,j),~] = obj_function(eta_matrix(:,i),sim_matrix,ctrl,delay,seed,noise,odefun);
+        end
     end
 end
+
+% compute eta that guarantees best average performance
+eta_avg_vect = mean(cost_matrix,2);
+[~,index] = min(eta_avg_vect);
+eta_avg = eta_matrix(:,index);
 
 % compute eta that guarantees best worst-case performance
 eta_wc_vect = max(cost_matrix,[],2);
 [~,index] = min(eta_wc_vect);
 eta_wc = eta_matrix(:,index);
 
-% compute eta that guarantees best average performance
 
-eta_avg_vect = mean(cost_matrix,2);
-[~,index] = min(eta_avg_vect);
-eta_avg = eta_matrix(:,index);
-%% Task 2_2
+%% Analize optimal results
 
 eta=[eta_wc eta_avg];
 identification_opt=cell(size(eta,2),1);
 for i=1:size(eta,2)
     [~, identification_opt{i}] = obj_function(eta(:,i),model,ctrl,delay,seed,noise,odefun);
 end
+
+%% plot task 2
+
+%surface plot scenario-eta-cost
+figure;
+[X,Y] = meshgrid(1:N_scenarios,1:N_scenarios);
+Z = cost_matrix;
+surf(X,Y,Z)
+
+xlabel('Input sequence index')
+ylabel('Scenario index')
+zlabel('Cost')
+
+
+close all
+save('ALL_DATA_50-5')
+
+
+
+
+
+
 %% END OF CODE

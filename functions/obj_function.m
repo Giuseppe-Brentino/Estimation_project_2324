@@ -14,7 +14,7 @@ excitation_time = (0:ctrl.sample_time:T)';
 freq_fun = 2*pi*excitation_time.*(f1 + (f2-f1)/T.*excitation_time);
 excitation_value = [wait_vector; 0.1*sin(freq_fun); wait_vector] ;
 excitation_time = (0:ctrl.sample_time:simulation_time)';
-ExcitationM=[excitation_time, excitation_value];
+ExcitationM=[excitation_time, excitation_value];         % optimized input sequence
 
 [identification] = Model_identification(ExcitationM,model,ctrl,delay,seed,noise,odefun,simulation_time);
 
