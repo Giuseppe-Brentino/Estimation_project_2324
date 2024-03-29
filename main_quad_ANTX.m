@@ -299,7 +299,8 @@ end
 %%%% NON CALCOLARSI SEMPRE ESTIMATED MODEL
 cost_matrix = zeros(N_scenarios);
 theta_opt_matrix = zeros(6,N_scenarios);
-for i = 1:N_scenarios       % iterate on eta
+parfor i = 1:N_scenarios       % iterate on eta
+    sim_matrix = st;
     for j = 1:N_scenarios   % iterate on scenario
         sim_matrix.A =  scenario.A(:,:,j);
         sim_matrix.B =  scenario.B(:,:,j);
