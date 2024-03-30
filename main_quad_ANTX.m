@@ -279,17 +279,17 @@ for i = 1:N_ic:length(full_cost(:,2))
 
     eta_matrix(:,counter) = full_eta( :, index );
 
-    %Compute statistical parameters
-    mean_cost(counter)=mean(cost(1:counter));
-    std_cost(counter)=std(cost(1:counter));
-   
-
+     %Compute statistical parameters
+     mean_cost(counter)=mean(cost(1:counter));
+     std_cost(counter)=std(cost(1:counter));
+  
     % save s-s matrices for each scenario
     scenario.A(:,:,counter) = stoch_A(:,:,index);
     scenario.B(:,:,counter) = stoch_B(:,:,index);
     scenario.C(:,:,counter) = stoch_C(:,:,index);
     scenario.D(:,:,counter) = stoch_D(:,:,index);
 end
+
 
 
 %% Compare effectivness of eta with each scenario
@@ -380,7 +380,7 @@ f2_avg = eta_avg(2);
 T_avg = eta_avg(3);
 
 wait_time = 5;
-simulation_time = 2*wait_time + T;
+simulation_time = 2*wait_time + T_avg;
 % input
 wait_vector = zeros(round(wait_time/ctrl.sample_time),1);
 excitation_time = (0:ctrl.sample_time:T_avg)';
@@ -398,7 +398,7 @@ f2_wc = eta_wc(2);
 T_wc = eta_wc(3);
 
 wait_time = 5;
-simulation_time = 2*wait_time + T;
+simulation_time = 2*wait_time + T_wc;
 % input
 wait_vector = zeros(round(wait_time/ctrl.sample_time),1);
 excitation_time = (0:ctrl.sample_time:T_wc)';
@@ -415,8 +415,8 @@ figure
 b=bar3(cost_matrix);
 colorbar
 for k = 1:length(b)
-    zdata = b(k).ZData;    
-    b(k).CData = zdata;
+    zdata = b(k).ZData;     
+    b(k).CData = zdata;     
 end
 ylabel('Input sequence index')
 xlabel('Scenario index')
@@ -424,7 +424,7 @@ zlabel('Cost')
 
 
 
-save('ALL_DATA_50-5')
+%save('ALL_DATA_50-5')
 
 
 

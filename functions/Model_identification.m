@@ -30,7 +30,7 @@ identification.parameters = estimated_model.Report.Parameters.ParVector;
 identification.fit = estimated_model.Report.Fit.FitPercent;
 identification.covariance = getcov(estimated_model);
 identification.matrix={estimated_model.A; estimated_model.B; estimated_model.C; estimated_model.D};
-identification.estimated_model=estimated_model
+identification.estimated_model=estimated_model;
 
 if nargout>=2
     real_parameters = varargin{1};
