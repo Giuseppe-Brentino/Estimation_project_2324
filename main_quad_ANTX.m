@@ -99,81 +99,82 @@ time = 0:ctrl.sample_time:simulation_time;
 
 %%% TODO FARSI COMMENTARE LA FUNZIONE DA CHATGPT
 odefun= 'drone_model';
-[identification, estimation_error] = Model_identification(ExcitationM,model,ctrl,delay,seed,noise,odefun,simulation_time,real_parameters);
+[identification, estimation_error, measures] = Model_identification(ExcitationM,model,ctrl,delay,seed,noise,odefun,simulation_time,real_parameters);
 
-%%%%%%%%%%%%%%%%%%%%% TEMPORANEO - DA AGGIUSTARE %%%%%%%%%%%%%%%%%%%%%%%%%%
-% % validation
-%
-% seed.x = 5;
-% seed.vx = 6;
-% seed.theta = 7;
-% seed.q = 8;
-% simulation = sim('Simulator_Single_Axis');
-%
-% time = 0:ctrl.sample_time:simulation_time;
-%
-% data = struct;
-% data.ax = simulation.ax.Data;
-% data.q = simulation.q.Data;
-% data.Mtot = simulation.Mtot.Data;
-%
-% input = data.Mtot;              % Normalized control moment
-% output = [data.q data.ax];      % Measured acceleration and pitch rate
-%
-% real_sim = iddata(output, input, ctrl.sample_time);
+%% plots
 
-% A = estimated_model.A;
-% B = estimated_model.B;
-% C = [1 0 0 ; estimated_model.C(1,:) ; 0 0 1 ; estimated_model.C(2,:)];
-% D = [0; 0 ; estimated_model.D];
-% simulation = sim('Simulator_Single_Axis');
-% time = 0:ctrl.sample_time:simulation_time;
-%
-% data = struct;
-% data.ax = simulation.ax.Data;
-% data.q = simulation.q.Data;
-% data.Mtot = simulation.Mtot.Data;
-%
-% input = data.Mtot;              % Normalized control moment
-% output = [data.q data.ax];      % Measured acceleration and pitch rate
-%
-% est_sim = iddata(output, input, ctrl.sample_time);
-%
-% figure
-% compare(real_sim,est_sim)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+figure
+plot(time,measures(:,1),"b")
+grid on
+hold on
+plot(ExcitationM(:,1),ExcitationM(:,2),"r")
+legend('Total Moment','Excitation Moment','Location','best')
+title('Total Moment with excitation')
+grid on
+axis tight
 
-%%% plots
+figure
+plot(time,measures(:,3))
+title('Longitudinal Acceleration')
+grid on
+axis tight
 
-% % % % figure
-% % % % plot(sensors_time,data.Mtot,"b")
-% % % % grid on
-% % % % hold on
-% % % % plot(ExcitationM(:,1),ExcitationM(:,2),"r")
-% % % % legend('Total Moment','Excitation Moment','Location','best')
-% % % % title('Total Moment with excitation')
-% % % % grid on
-% % % % axis tight
-% % % %
-% % % % figure
-% % % % plot(sensors_time,data.ax)
-% % % % title('Longitudinal Acceleration')
-% % % % grid on
-% % % % axis tight
-% % % %
-% % % % figure
-% % % % plot(sensors_time,data.q)
-% % % % title('Pitch rate')
-% % % % grid on
-% % % % axis tight
+figure
+plot(time,measures(:,2))
+title('Pitch rate')
+grid on
+axis tight
 
 
 error_plot = figure;
 bar(estimation_error);
 title('Estimation error','Interpreter','latex')
 set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
-ylim([-0.12 0.15])
+ylim([-0.2 0.17])
 grid on
+
+
+% TODO: COMPARE
+ est_sim = ss(identification.matrix{1}, identification.matrix{2}, identification.matrix{3}, identification.matrix{4});
+% real_sys = iddata( measures(:,2:3),measures(:,1), ctrl.sample_time);
+% % y = lsim(est_sim, measures(:,1),time);
+% 
+% figure
+% compare(real_sim, identification.estimated_model)
+
+% Z-P PLOT
+est_sys = ss(identification.matrix{1}, identification.matrix{2}, identification.matrix{3}, identification.matrix{4});
+real_sys = ss(A,B,C,D);
+
+figure
+pz_opt = pzoptions;
+pz_opt.Title.String = '';
+pz_opt.XLabel.FontSize = 0.1;
+pz_opt.YLabel.FontSize = 0.1;
+
+pzplot(est_sys, real_sys)
+grid on
+
+axes('position',[0.61 0.61 0.25 0.15])
+box on % put box around new pair of axes
+hold on
+grid on
+pzplot(est_sys, real_sys,pz_opt)
+ylim([-0.01 0.01])
+xlim([3.08 3.09])
+set(gca,'color','w');
+
+axes('position',[0.25 0.38 .2 .3])
+box on % put box around new pair of axes
+hold on
+grid on
+pzplot(est_sys, real_sys,pz_opt)
+ylim([-3.3 3.3])
+xlim([-2.93 -2.91])
+xlabel('')
+ylabel('')
+set(gca,'color','w');
+
 
 %% TASK 2
 
@@ -258,8 +259,6 @@ eta_matrix = zeros(3,N_scenarios);
 
 mean_cost=zeros(N_scenarios,1);
 std_cost=zeros(N_scenarios,1);
-mean_eta=zeros(3,N_scenarios);
-std_eta=zeros(3,N_scenarios);
 
 scenario.A = zeros(3,3,N_scenarios);
 scenario.B = zeros(3,1,N_scenarios);
@@ -283,8 +282,7 @@ for i = 1:N_ic:length(full_cost(:,2))
     %Compute statistical parameters
     mean_cost(counter)=mean(cost(1:counter));
     std_cost(counter)=std(cost(1:counter));
-    mean_eta(:,counter)=mean(eta_matrix(:,1:counter),2);
-    std_eta(:,counter)=std(eta_matrix(:,1:counter),0,2);
+   
 
     % save s-s matrices for each scenario
     scenario.A(:,:,counter) = stoch_A(:,:,index);
@@ -293,12 +291,17 @@ for i = 1:N_ic:length(full_cost(:,2))
     scenario.D(:,:,counter) = stoch_D(:,:,index);
 end
 
+
 %% Compare effectivness of eta with each scenario
 
 %%%% TO DO: AGGIUNGERE EXTRA INPUT OPZIONALE A OBJ_FUNCTION PER INDICE PER
 %%%% NON CALCOLARSI SEMPRE ESTIMATED MODEL
 cost_matrix = zeros(N_scenarios);
 theta_opt_matrix = zeros(6,N_scenarios);
+
+
+identified_model = cell(N_scenarios,1);
+
 parfor i = 1:N_scenarios       % iterate on eta
     sim_matrix = st;
     for j = 1:N_scenarios   % iterate on scenario
@@ -307,8 +310,9 @@ parfor i = 1:N_scenarios       % iterate on eta
         sim_matrix.C =  scenario.C(:,:,j);
         sim_matrix.D =  scenario.D(:,:,j);
         if i == j
-            [cost_matrix(i,j),identified_model] = obj_function(eta_matrix(:,i),sim_matrix,ctrl,delay,seed,noise,odefun);
-            theta_opt_matrix(:,i) = identified_model.parameters;
+            [cost_matrix(i,j),identified_model{i}] = obj_function(eta_matrix(:,i),sim_matrix,ctrl,delay,seed,noise,odefun);
+            theta_opt_matrix(:,i) = identified_model{i}.parameters;
+            
         else
             [cost_matrix(i,j),~] = obj_function(eta_matrix(:,i),sim_matrix,ctrl,delay,seed,noise,odefun);
         end
@@ -336,18 +340,90 @@ end
 
 %% plot task 2
 
-%surface plot scenario-eta-cost
-figure;
-[X,Y] = meshgrid(1:N_scenarios,1:N_scenarios);
-Z = cost_matrix;
-surf(X,Y,Z)
+%TODO: PLOT FIT!
 
-xlabel('Input sequence index')
-ylabel('Scenario index')
+
+%PLOT DVS
+nbins=15;
+
+figure
+plot(mean_cost)
+grid on
+xlabel('Number of iterations') 
+ylabel('Mean Cost')
+
+figure
+plot(std_cost)
+grid on
+xlabel('Number of iterations') 
+ylabel('Std Cost')
+
+figure
+histogram(eta_matrix(1,:),nbins)
+grid on
+xlabel('f_1')
+
+figure
+histogram(eta_matrix(2,:),nbins)
+grid on
+xlabel('f_2')
+
+figure
+histogram(eta_matrix(3,:),nbins)
+grid on
+xlabel('T')
+
+%Plot Input ETA_AVG
+
+f1_avg = eta_avg(1);
+f2_avg = eta_avg(2);
+T_avg = eta_avg(3);
+
+wait_time = 5;
+simulation_time = 2*wait_time + T;
+% input
+wait_vector = zeros(round(wait_time/ctrl.sample_time),1);
+excitation_time = (0:ctrl.sample_time:T_avg)';
+freq_fun = 2*pi*excitation_time.*(f1_avg + (f2_avg-f1_avg)/T_avg.*excitation_time);
+excitation_value = [wait_vector; 0.1*sin(freq_fun); wait_vector] ;
+excitation_time_AVG = (0:ctrl.sample_time:simulation_time)';
+ExcitationM_AVG=[excitation_time_AVG, excitation_value];         % optimized input sequence
+figure
+plot(ExcitationM_AVG(:,1),ExcitationM_AVG(:,2))
+
+%Plot Input ETA_WC
+
+f1_wc = eta_wc(1);
+f2_wc = eta_wc(2);
+T_wc = eta_wc(3);
+
+wait_time = 5;
+simulation_time = 2*wait_time + T;
+% input
+wait_vector = zeros(round(wait_time/ctrl.sample_time),1);
+excitation_time = (0:ctrl.sample_time:T_wc)';
+freq_fun = 2*pi*excitation_time.*(f1_wc + (f2_wc-f1_wc)/T_wc.*excitation_time);
+excitation_value = [wait_vector; 0.1*sin(freq_fun); wait_vector] ;
+excitation_time_WC = (0:ctrl.sample_time:simulation_time)';
+ExcitationM_WC=[excitation_time_WC, excitation_value];         % optimized input sequence
+figure
+plot(ExcitationM_WC(:,1),ExcitationM_WC(:,2))
+
+
+%surface plot scenario-eta-cost
+figure
+b=bar3(cost_matrix);
+colorbar
+for k = 1:length(b)
+    zdata = b(k).ZData;    
+    b(k).CData = zdata;
+end
+ylabel('Input sequence index')
+xlabel('Scenario index')
 zlabel('Cost')
 
 
-close all
+
 save('ALL_DATA_50-5')
 
 
