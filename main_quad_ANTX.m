@@ -101,6 +101,10 @@ time = 0:ctrl.sample_time:simulation_time;
 odefun= 'drone_model';
 [identification, estimation_error, measures] = Model_identification(ExcitationM,model,ctrl,delay,seed,noise,odefun,simulation_time,real_parameters);
 
+normalized_cov = abs(100*diag(identification.covariance)./identification.parameters);
+
+%cost function
+J1 = sum(normalized_cov);
 %% plots
 
 figure
@@ -134,13 +138,41 @@ ylim([-0.2 0.17])
 grid on
 
 
-% TODO: COMPARE
- est_sim = ss(identification.matrix{1}, identification.matrix{2}, identification.matrix{3}, identification.matrix{4});
-% real_sys = iddata( measures(:,2:3),measures(:,1), ctrl.sample_time);
-% % y = lsim(est_sim, measures(:,1),time);
+% COMPARE
+  real_sys = iddata([measures(:,2) measures(:,3)],measures(:,1), ctrl.sample_time); %misure2=q e misure3=ax
+  figure
+  plot(real_sys) %y1=q e y2=ax
+  figure
+  compare(fft(real_sys), identification.estimated_model) %spiegare il perchè grande differenza per freq basse
+
+% %Grafici nel tempo 
+% 
+%  simulation= sim('Simulator_Single_Axis','SrcWorkspace', 'current');
+%  A=identification.matrix{1};
+%  B=identification.matrix{2};
+%  C = [1 0 0 ; identification.matrix{3}(1,:) ; 0 0 1 ; identification.matrix{3}(2,:)];
+%  D = [0; 0 ; identification.matrix{4}];
+%  simulation_estimate = sim('Simulator_Single_Axis','SrcWorkspace', 'current'); 
 % 
 % figure
-% compare(real_sim, identification.estimated_model)
+% plot(time,simulation_estimate.ax.Data)
+% hold on
+% plot(time,simulation.ax.Data,'--')
+% legend('Sim','True')
+% title("Longitudinal Acceleration FIT " +identification.fit(2))
+% grid on
+% axis tight
+% 
+% figure
+% plot(time,simulation_estimate.q.Data)
+% hold on
+% plot(time,simulation.q.Data,'--')
+% legend('Sim','True')
+% title("Pitch rate FIT" +identification.fit(1))
+% grid on
+% axis tight
+
+
 
 % Z-P PLOT
 est_sys = ss(identification.matrix{1}, identification.matrix{2}, identification.matrix{3}, identification.matrix{4});
@@ -178,7 +210,7 @@ set(gca,'color','w');
 
 %% TASK 2
 
-N_scenarios = 50;  % number of scenarios
+N_scenarios = 72;  % number of scenarios
 N_ic = 5;   % number of initial guesses for each optimization problem
 N_sim = N_scenarios*N_ic;
 
@@ -193,12 +225,12 @@ stoch_C = zeros(4,3,N_sim);
 stoch_D = zeros(4,1,N_sim);
 
 % initialize results matrices
-full_eta =zeros(3,N_sim);
+full_eta = zeros(3,N_sim);
 full_cost = zeros(N_sim,2);
-full_cost(:,1) = repelem(1:N_scenarios,N_ic)';
+full_cost(:,1) = repelem(1:N_scenarios,N_ic)'; %mette in ordine sparso gli elementi 
 
 % constraints
-lb = [0.01; 0.01; 20];
+lb = [0.01; 0.01; 20]; %spiegare da dove li abbiamo presi questi constrain 
 ub = [10; 50; 90];
 A_constr = [1 -1 0];
 b_constr = 0;
@@ -206,8 +238,7 @@ b_constr = 0;
 
 % initial input sequence guess
 %%%%%%%%%% DA DISCUTERE SE HA SENSO USARE SEMPRE LE STESS I.C. %%%%%%%%%%%%
-eta0_mat = lb + (ub-lb) .* rand(3,N_sim);
-% eta0_mat = repmat(eta0_temp,1,N_scenarios);
+eta0_mat = lb + (ub-lb) .* rand(3,N_sim); %genera in maniera random i valori eta iniziali con cui parte la simulazione
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % solver options
@@ -233,7 +264,7 @@ parfor i = 1:N_sim
         stoch_params(i,1) stoch_params(i,2) 0];
 
     stoch_D(:,:,i) = [0; 0 ; 0; stoch_params(i,5)];
-
+    
     estimated_matrix.A = stoch_A(:,:,i);
     estimated_matrix.B = stoch_B(:,:,i);
     estimated_matrix.C = stoch_C(:,:,i);
@@ -273,11 +304,11 @@ for i = 1:N_ic:length(full_cost(:,2))
 
     counter = counter+1;
 
-    cost(counter) = min( full_cost(i:i+N_ic-1,2) );
+    cost(counter) = min( full_cost(i:i+N_ic-1,2) ); %fra i 5 input di uno scenario prendo quello che mi da min(J)
 
     index = find( full_cost(i:i+N_ic-1,2) == cost(counter) ) + (i-1);
 
-    eta_matrix(:,counter) = full_eta( :, index );
+    eta_matrix(:,counter) = full_eta( :, index ); %eta_matrix=(input [f1 f2 T], Scenario)
 
      %Compute statistical parameters
      mean_cost(counter)=mean(cost(1:counter));
@@ -334,9 +365,21 @@ eta_wc = eta_matrix(:,index);
 
 eta=[eta_wc eta_avg];
 identification_opt=cell(size(eta,2),1);
+J_opt=zeros(2,1);
+error_opt = zeros(6,2);
 for i=1:size(eta,2)
     [~, identification_opt{i}] = obj_function(eta(:,i),model,ctrl,delay,seed,noise,odefun);
+
+    % estimation error
+   error_opt(:,i) = (identification_opt{i}.parameters-real_parameters) ./ real_parameters * 100;
+
+%cost function
+normalized_cov = abs(100*diag(identification_opt{i}.covariance)./identification_opt{i}.parameters);
+J_opt(i) = sum(normalized_cov);
+
 end
+
+
 
 %% plot task 2
 
@@ -346,18 +389,46 @@ end
 %PLOT DVS
 nbins=15;
 
+% figure
+% plot(mean_cost)
+% grid on
+% xlabel('Number of iterations') 
+% ylabel('Mean Cost')
+
+[fitresult, gof] = figure_mean_cost(mean_cost);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% figure
+% plot(std_cost)
+% grid on
+% xlabel('Number of iterations') 
+% ylabel('Std Cost')
+
+%% Comparison of estimation error
+error_plot = figure;
+tiledlayout(6,1);
+
+hold on
+grid minor
+bar(nexttile,abs([estimation_error,error_opt(:,1),error_opt(:,2)]));
+
+title('Estimation error','Interpreter','latex')
+set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
+ylim([0 0.2])
+legend('Initial Input','Input $\eta_{wc}$', 'Input $\eta_{avg}$')
+%%
+%Grafico STD direttamento con istogramma dei costi
+pd = fitdist(cost,'Exponential');
 figure
-plot(mean_cost)
-grid on
-xlabel('Number of iterations') 
-ylabel('Mean Cost')
+plot(pd)
+xlabel('Cost')
 
 figure
-plot(std_cost)
-grid on
-xlabel('Number of iterations') 
-ylabel('Std Cost')
+errorbar(cost,std_cost,'x')
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figure
 histogram(eta_matrix(1,:),nbins)
 grid on
@@ -426,9 +497,35 @@ zlabel('Cost')
 
 %save('ALL_DATA_50-5')
 
+% Plot dei parametri
+figure
+histogram(theta_opt_matrix(1,:),100)
+grid on
+xlabel('X_u')
 
+figure
+histogram(theta_opt_matrix(2,:))
+grid on
+xlabel('X_q')
 
+figure
+histogram(theta_opt_matrix(3,:),15)
+grid on
+xlabel('M_u')
 
+figure
+histogram(theta_opt_matrix(4,:))
+grid on
+xlabel('M_q')
 
+figure
+histogram(theta_opt_matrix(5,:))
+grid on
+xlabel('X_d')
+
+figure
+histogram(theta_opt_matrix(6,:))
+grid on
+xlabel('M_d')
 
 %% END OF CODE

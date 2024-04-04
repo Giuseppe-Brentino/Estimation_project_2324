@@ -32,6 +32,7 @@ identification.covariance = getcov(estimated_model);
 identification.matrix={estimated_model.A; estimated_model.B; estimated_model.C; estimated_model.D};
 identification.estimated_model=estimated_model;
 
+
 if nargout>=2
     real_parameters = varargin{1};
     varargout{1} = (identification.parameters-real_parameters) ./ real_parameters * 100; %Estimation Error
