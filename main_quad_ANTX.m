@@ -107,7 +107,7 @@ normalized_cov = abs(100*diag(identification.covariance)./identification.paramet
 J1 = sum(normalized_cov);
 %% plots
 
-figure
+input_seq_plot = figure;
 plot(time,measures(:,1),"b")
 grid on
 hold on
@@ -115,28 +115,41 @@ plot(ExcitationM(:,1),ExcitationM(:,2),"r")
 legend('Total Moment','Excitation Moment','Location','best')
 title('Total Moment with excitation')
 grid on
+xlabel('Time [s]')
+ylabel('Normalized moment [-]')
 axis tight
+exportStandardizedFigure(gcf,'input_plot',0.67, 'addMarkers', false, ...
+         'WHratio', 1.8)
 
-figure
+long_acc = figure;
 plot(time,measures(:,3))
 title('Longitudinal Acceleration')
 grid on
 axis tight
+xlabel('Time [s]')
+ylabel('Acceleration [$m/s^2$]')
+exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false, ...
+         'WHratio', 1.8)
 
-figure
+pitch_rate_plot = figure;
 plot(time,measures(:,2))
 title('Pitch rate')
 grid on
 axis tight
-
+xlabel('Time [s]')
+ylabel('Pitch rate [rad/s]')
+exportStandardizedFigure(gcf,'pitchrate',0.67, 'addMarkers', false, ...
+         'WHratio', 1.8)
 
 error_plot = figure;
 bar(estimation_error);
 title('Estimation error','Interpreter','latex')
 set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
-ylim([-0.2 0.17])
+ylabel('error [%]')
+ylim([-0.12 0.15])
 grid on
-
+exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
+         'WHratio', 1.3)
 
 % COMPARE
   real_sys = iddata([measures(:,2) measures(:,3)],measures(:,1), ctrl.sample_time); %misure2=q e misure3=ax
@@ -145,68 +158,57 @@ grid on
   figure
   compare(fft(real_sys), identification.estimated_model) %spiegare il perchè grande differenza per freq basse
 
-% %Grafici nel tempo 
-% 
-%  simulation= sim('Simulator_Single_Axis','SrcWorkspace', 'current');
-%  A=identification.matrix{1};
-%  B=identification.matrix{2};
-%  C = [1 0 0 ; identification.matrix{3}(1,:) ; 0 0 1 ; identification.matrix{3}(2,:)];
-%  D = [0; 0 ; identification.matrix{4}];
-%  simulation_estimate = sim('Simulator_Single_Axis','SrcWorkspace', 'current'); 
-% 
-% figure
-% plot(time,simulation_estimate.ax.Data)
-% hold on
-% plot(time,simulation.ax.Data,'--')
-% legend('Sim','True')
-% title("Longitudinal Acceleration FIT " +identification.fit(2))
-% grid on
-% axis tight
-% 
-% figure
-% plot(time,simulation_estimate.q.Data)
-% hold on
-% plot(time,simulation.q.Data,'--')
-% legend('Sim','True')
-% title("Pitch rate FIT" +identification.fit(1))
-% grid on
-% axis tight
-
-
 
 % Z-P PLOT
 est_sys = ss(identification.matrix{1}, identification.matrix{2}, identification.matrix{3}, identification.matrix{4});
 real_sys = ss(A,B,C,D);
 
-figure
+pz_plot = figure;
 pz_opt = pzoptions;
 pz_opt.Title.String = '';
 pz_opt.XLabel.FontSize = 0.1;
 pz_opt.YLabel.FontSize = 0.1;
 
 pzplot(est_sys, real_sys)
+legend('Estimated System', 'Real System')
+a = findobj(gca,'type','line');
+for i = 1:length(a)
+    set(a(i),'markersize',10); %change marker size
+    set(a(i), 'linewidth',2);  %change linewidth
+end
 grid on
 
-axes('position',[0.61 0.61 0.25 0.15])
+axes('position',[0.61 0.7 0.25 0.15])
 box on % put box around new pair of axes
 hold on
 grid on
 pzplot(est_sys, real_sys,pz_opt)
 ylim([-0.01 0.01])
 xlim([3.08 3.09])
+a = findobj(gca,'type','line');
+for i = 1:length(a)
+    set(a(i),'markersize',10); %change marker size
+    set(a(i), 'linewidth',2);  %change linewidth
+end
 set(gca,'color','w');
 
-axes('position',[0.25 0.38 .2 .3])
+axes('position',[0.61 0.3 0.25 0.25])
 box on % put box around new pair of axes
 hold on
 grid on
 pzplot(est_sys, real_sys,pz_opt)
-ylim([-3.3 3.3])
+ylim([-3.6 3.6])
 xlim([-2.93 -2.91])
 xlabel('')
 ylabel('')
+a = findobj(gca,'type','line');
+for i = 1:length(a)
+    set(a(i),'markersize',10); %change marker size
+    set(a(i), 'linewidth',2);  %change linewidth
+end
 set(gca,'color','w');
-
+exportStandardizedFigure(gcf,'pz_plot',0.67, 'addMarkers', false, ...
+         'WHratio', 1.3)
 
 %% TASK 2
 
@@ -325,8 +327,6 @@ end
 
 %% Compare effectivness of eta with each scenario
 
-%%%% TO DO: AGGIUNGERE EXTRA INPUT OPZIONALE A OBJ_FUNCTION PER INDICE PER
-%%%% NON CALCOLARSI SEMPRE ESTIMATED MODEL
 cost_matrix = zeros(N_scenarios);
 theta_opt_matrix = zeros(6,N_scenarios);
 
@@ -383,29 +383,36 @@ end
 
 %% plot task 2
 
-%TODO: PLOT FIT!
+% mean
+filtered_mean = movmean(mean_cost,10);
+filtered_mean(1:10) =movmean(mean_cost(1:10),3);
+figure();
+hold on
+grid on
+plot( mean_cost);
+plot( filtered_mean );
+legend('Mean cost','Trend');
+ylabel('Mean');
+xlabel('Iterations')
+title('Mean cost evolution')
+exportStandardizedFigure(gcf,'mean_cost_plot',0.67, 'addMarkers', false)
+
+% std
+filtered_std = movmean(std_cost,10);
+filtered_std(1:10) =movmean(std_cost(1:10),3);
+figure();
+hold on
+grid on
+plot( std_cost);
+plot( filtered_std );
+legend('Cost standard deviation','Trend');
+ylabel('Standard Deviation');
+xlabel('Iterations')
+title('Standard deviation evolution')
+exportStandardizedFigure(gcf,'std_cost_plot',0.67, 'addMarkers', false)
 
 
-%PLOT DVS
-nbins=15;
-
-% figure
-% plot(mean_cost)
-% grid on
-% xlabel('Number of iterations') 
-% ylabel('Mean Cost')
-
-[fitresult, gof] = figure_mean_cost(mean_cost);
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% figure
-% plot(std_cost)
-% grid on
-% xlabel('Number of iterations') 
-% ylabel('Std Cost')
-
-%% Comparison of estimation error
+% Comparison of estimation error
 error_plot = figure;
 tiledlayout(6,1);
 
@@ -417,32 +424,38 @@ title('Estimation error','Interpreter','latex')
 set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
 ylim([0 0.2])
 legend('Initial Input','Input $\eta_{wc}$', 'Input $\eta_{avg}$')
-%%
-%Grafico STD direttamento con istogramma dei costi
+exportStandardizedFigure(gcf,'error_opt_hist_plot',0.67, 'addMarkers', false)
+
+nbins=15;
+
 pd = fitdist(cost,'Exponential');
 figure
 plot(pd)
 xlabel('Cost')
+ylabel('Number of occurrencies')
+exportStandardizedFigure(gcf,'Cost_dist_plot',0.67, 'addMarkers', false,...
+    'changeColors',false)
 
-figure
-errorbar(cost,std_cost,'x')
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 figure
 histogram(eta_matrix(1,:),nbins)
 grid on
-xlabel('f_1')
+xlabel('$f_1$ [Hz]')
+ylabel('Number of occurencies')
+exportStandardizedFigure(gcf,'f1_dist_plot',0.67, 'addMarkers', false)
 
 figure
 histogram(eta_matrix(2,:),nbins)
 grid on
-xlabel('f_2')
+xlabel('$f_2$ [Hz]')
+ylabel('Number of occurencies')
+exportStandardizedFigure(gcf,'f2_dist_plot',0.67, 'addMarkers', false)
 
 figure
 histogram(eta_matrix(3,:),nbins)
 grid on
-xlabel('T')
+xlabel('T [s]')
+ylabel('Number of occurencies')
+exportStandardizedFigure(gcf,'T_dist_plot',0.67, 'addMarkers', false)
 
 %Plot Input ETA_AVG
 
@@ -470,6 +483,7 @@ T_wc = eta_wc(3);
 
 wait_time = 5;
 simulation_time = 2*wait_time + T_wc;
+
 % input
 wait_vector = zeros(round(wait_time/ctrl.sample_time),1);
 excitation_time = (0:ctrl.sample_time:T_wc)';
@@ -477,14 +491,23 @@ freq_fun = 2*pi*excitation_time.*(f1_wc + (f2_wc-f1_wc)/T_wc.*excitation_time);
 excitation_value = [wait_vector; 0.1*sin(freq_fun); wait_vector] ;
 excitation_time_WC = (0:ctrl.sample_time:simulation_time)';
 ExcitationM_WC=[excitation_time_WC, excitation_value];         % optimized input sequence
-figure
-plot(ExcitationM_WC(:,1),ExcitationM_WC(:,2))
 
+excitation_opt = figure();
+set(gcf, 'Position', get(0, 'Screensize'));
+hold on 
+grid on
+plot(ExcitationM_WC(:,1),ExcitationM_WC(:,2))
+xlabel('Time [s]')
+ylabel('Normalized moment [-]')
+title('Optimal excitation moment')
+exportStandardizedFigure(gcf,'excitation_opt_plot',1, 'addMarkers', false, ...
+    'WHRatio',3)
 
 %surface plot scenario-eta-cost
 figure
 b=bar3(cost_matrix);
-colorbar
+c = colorbar;
+c.Label.String = 'Cost';
 for k = 1:length(b)
     zdata = b(k).ZData;     
     b(k).CData = zdata;     
@@ -492,40 +515,18 @@ end
 ylabel('Input sequence index')
 xlabel('Scenario index')
 zlabel('Cost')
-
-
-
-%save('ALL_DATA_50-5')
-
-% Plot dei parametri
-figure
-histogram(theta_opt_matrix(1,:),100)
-grid on
-xlabel('X_u')
+view(62,22)
 
 figure
-histogram(theta_opt_matrix(2,:))
-grid on
-xlabel('X_q')
-
-figure
-histogram(theta_opt_matrix(3,:),15)
-grid on
-xlabel('M_u')
-
-figure
-histogram(theta_opt_matrix(4,:))
-grid on
-xlabel('M_q')
-
-figure
-histogram(theta_opt_matrix(5,:))
-grid on
-xlabel('X_d')
-
-figure
-histogram(theta_opt_matrix(6,:))
-grid on
-xlabel('M_d')
+b=bar3(cost_matrix);
+for k = 1:length(b)
+    zdata = b(k).ZData;     
+    b(k).CData = zdata;     
+end
+ylabel('Input sequence index')
+xlabel('Scenario index')
+zlabel('Cost')
+ylim([0 73])
+view(-90,90)
 
 %% END OF CODE
