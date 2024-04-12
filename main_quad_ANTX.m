@@ -118,8 +118,8 @@ grid on
 xlabel('Time [s]')
 ylabel('Normalized moment [-]')
 axis tight
-exportStandardizedFigure(gcf,'input_plot',0.67, 'addMarkers', false, ...
-         'WHratio', 1.8)
+%%exportStandardizedFigure(gcf,'input_plot',0.67, 'addMarkers', false, ...
+ %       %%% 'WHratio', 1.8)
 
 long_acc = figure;
 plot(time,measures(:,3))
@@ -128,8 +128,8 @@ grid on
 axis tight
 xlabel('Time [s]')
 ylabel('Acceleration [$m/s^2$]')
-exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false, ...
-         'WHratio', 1.8)
+%%exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false, ...
+    %    %%% 'WHratio', 1.8)
 
 pitch_rate_plot = figure;
 plot(time,measures(:,2))
@@ -138,8 +138,8 @@ grid on
 axis tight
 xlabel('Time [s]')
 ylabel('Pitch rate [rad/s]')
-exportStandardizedFigure(gcf,'pitchrate',0.67, 'addMarkers', false, ...
-         'WHratio', 1.8)
+%exportStandardizedFigure(gcf,'pitchrate',0.67, 'addMarkers', false, ...
+        %%% 'WHratio', 1.8)
 
 error_plot = figure;
 bar(estimation_error);
@@ -148,8 +148,8 @@ set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
 ylabel('error [%]')
 ylim([-0.12 0.15])
 grid on
-exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
-         'WHratio', 1.3)
+%exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
+        %%% 'WHratio', 1.3)
 
 % COMPARE
   real_sys = iddata([measures(:,2) measures(:,3)],measures(:,1), ctrl.sample_time); %misure2=q e misure3=ax
@@ -207,13 +207,13 @@ for i = 1:length(a)
     set(a(i), 'linewidth',2);  %change linewidth
 end
 set(gca,'color','w');
-exportStandardizedFigure(gcf,'pz_plot',0.67, 'addMarkers', false, ...
-         'WHratio', 1.3)
+%exportStandardizedFigure(gcf,'pz_plot',0.67, 'addMarkers', false, ...
+        %%% 'WHratio', 1.3)
 
 %% TASK 2
 
-N_scenarios = 72;  % number of scenarios
-N_ic = 5;   % number of initial guesses for each optimization problem
+N_scenarios = 1;  % number of scenarios
+N_ic = 1;   % number of initial guesses for each optimization problem
 N_sim = N_scenarios*N_ic;
 
 %generate uncertain parameters
@@ -244,13 +244,13 @@ eta0_mat = lb + (ub-lb) .* rand(3,N_sim); %genera in maniera random i valori eta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % solver options
-opts = optimoptions(@fmincon,'Algorithm','sqp','Display','none');
+opts = optimoptions(@ga,'Display','none','PlotFcn','gaplotbestf');
 tic
 
 set_param('Simulator_Single_Axis',"FastRestart","on");
 st = struct;
 
-parfor i = 1:N_sim
+for i = 1:N_sim
 
     estimated_matrix = st;
     % build state-space matrices
@@ -276,8 +276,9 @@ parfor i = 1:N_sim
     disp("Simulation " + i + " out of " + N_sim );
     % optimize input sequence
     eta0 = eta0_mat(:,i);
-    [full_eta(:,i),full_cost(i,2),exitflag,~] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
-        opts,estimated_matrix,ctrl,delay,seed,noise,odefun);
+
+    [full_eta(:,i),full_cost(i,2),exitflag,~] = ga(@(x) obj_function(x,estimated_matrix,ctrl,delay,seed,noise,odefun),3,A_constr,b_constr,[],[],lb,ub,[],...
+        opts);
 
 
 end
@@ -333,7 +334,7 @@ theta_opt_matrix = zeros(6,N_scenarios);
 
 identified_model = cell(N_scenarios,1);
 
-parfor i = 1:N_scenarios       % iterate on eta
+for i = 1:N_scenarios       % iterate on eta
     sim_matrix = st;
     for j = 1:N_scenarios   % iterate on scenario
         sim_matrix.A =  scenario.A(:,:,j);
@@ -395,7 +396,7 @@ legend('Mean cost','Trend');
 ylabel('Mean');
 xlabel('Iterations')
 title('Mean cost evolution')
-exportStandardizedFigure(gcf,'mean_cost_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'mean_cost_plot',0.67, 'addMarkers', false)
 
 % std
 filtered_std = movmean(std_cost,10);
@@ -409,7 +410,7 @@ legend('Cost standard deviation','Trend');
 ylabel('Standard Deviation');
 xlabel('Iterations')
 title('Standard deviation evolution')
-exportStandardizedFigure(gcf,'std_cost_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'std_cost_plot',0.67, 'addMarkers', false)
 
 
 % Comparison of estimation error
@@ -424,7 +425,7 @@ title('Estimation error','Interpreter','latex')
 set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
 ylim([0 0.2])
 legend('Initial Input','Input $\eta_{wc}$', 'Input $\eta_{avg}$')
-exportStandardizedFigure(gcf,'error_opt_hist_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'error_opt_hist_plot',0.67, 'addMarkers', false)
 
 nbins=15;
 
@@ -433,29 +434,29 @@ figure
 plot(pd)
 xlabel('Cost')
 ylabel('Number of occurrencies')
-exportStandardizedFigure(gcf,'Cost_dist_plot',0.67, 'addMarkers', false,...
-    'changeColors',false)
+%exportStandardizedFigure(gcf,'Cost_dist_plot',0.67, 'addMarkers', false,...
+   % 'changeColors',false)
 
 figure
 histogram(eta_matrix(1,:),nbins)
 grid on
 xlabel('$f_1$ [Hz]')
 ylabel('Number of occurencies')
-exportStandardizedFigure(gcf,'f1_dist_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'f1_dist_plot',0.67, 'addMarkers', false)
 
 figure
 histogram(eta_matrix(2,:),nbins)
 grid on
 xlabel('$f_2$ [Hz]')
 ylabel('Number of occurencies')
-exportStandardizedFigure(gcf,'f2_dist_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'f2_dist_plot',0.67, 'addMarkers', false)
 
 figure
 histogram(eta_matrix(3,:),nbins)
 grid on
 xlabel('T [s]')
 ylabel('Number of occurencies')
-exportStandardizedFigure(gcf,'T_dist_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'T_dist_plot',0.67, 'addMarkers', false)
 
 %Plot Input ETA_AVG
 
@@ -500,8 +501,8 @@ plot(ExcitationM_WC(:,1),ExcitationM_WC(:,2))
 xlabel('Time [s]')
 ylabel('Normalized moment [-]')
 title('Optimal excitation moment')
-exportStandardizedFigure(gcf,'excitation_opt_plot',1, 'addMarkers', false, ...
-    'WHRatio',3)
+%exportStandardizedFigure(gcf,'excitation_opt_plot',1, 'addMarkers', false, ...
+   %%% 'WHratio',3)
 
 %surface plot scenario-eta-cost
 figure
