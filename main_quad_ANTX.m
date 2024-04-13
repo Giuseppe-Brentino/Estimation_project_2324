@@ -21,6 +21,7 @@ rng default;
 
 addpath('datasets','common','common/simulator-toolbox','common/simulator-toolbox/attitude_library','common/simulator-toolbox/trajectory_library');
 addpath('functions');
+% load ALL_DATA_72-5_DEF.mat
 %% Model parameters
 
 % Initial model (state: longitudinal velocity, pitch rate, pitch angle; input: normalised pitching moment; outputs: state and longitudinal acceleration)
@@ -212,8 +213,8 @@ set(gca,'color','w');
 
 %% TASK 2
 
-N_scenarios = 1;  % number of scenarios
-N_ic = 1;   % number of initial guesses for each optimization problem
+N_scenarios = 70;  % number of scenarios
+N_ic = 5;   % number of initial guesses for each optimization problem
 N_sim = N_scenarios*N_ic;
 
 %generate uncertain parameters
@@ -244,9 +245,11 @@ eta0_mat = lb + (ub-lb) .* rand(3,N_sim); %genera in maniera random i valori eta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % solver options
-opts = optimoptions(@ga,'Display','none','PlotFcn','gaplotbestf');
+% opts = optimoptions(@ga,'Display','none','PlotFcn','gaplotbestf');
 tic
+opts = optimoptions(@fmincon,'Algorithm', 'active-set','MaxIter',3000,'Display','none');
 
+tic
 set_param('Simulator_Single_Axis',"FastRestart","on");
 st = struct;
 
@@ -277,14 +280,17 @@ for i = 1:N_sim
     % optimize input sequence
     eta0 = eta0_mat(:,i);
 
-    [full_eta(:,i),full_cost(i,2),exitflag,~] = ga(@(x) obj_function(x,estimated_matrix,ctrl,delay,seed,noise,odefun),3,A_constr,b_constr,[],[],lb,ub,[],...
-        opts);
+   % [full_eta(:,i),full_cost(i,2),exitflag,~] = ga(@(x) obj_function(x,estimated_matrix,ctrl,delay,seed,noise,odefun),3,A_constr,b_constr,[],[],lb,ub,[],...
+   %     opts);
+    [full_eta(:,i),full_cost(i,2)] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
+        opts,estimated_matrix,ctrl,delay,seed,noise,odefun);
 
 
 end
 toc
-
-
+save Task2_1section
+load("chirp.mat")
+sound(y)
 %% Cost function analysis
 
 % Initialize variables
@@ -301,6 +307,7 @@ scenario.D = zeros(4,1,N_scenarios);
 
 % post-process of the optimization
 counter = 0;
+tic
 for i = 1:N_ic:length(full_cost(:,2))
 
     % compute optimal cost and input for each scenario
@@ -309,11 +316,11 @@ for i = 1:N_ic:length(full_cost(:,2))
 
     cost(counter) = min( full_cost(i:i+N_ic-1,2) ); %fra i 5 input di uno scenario prendo quello che mi da min(J)
 
-    index = find( full_cost(i:i+N_ic-1,2) == cost(counter) ) + (i-1);
+    
+    index= find( full_cost(i:i+N_ic-1,2) == cost(counter),1,'first') + (i-1);
 
     eta_matrix(:,counter) = full_eta( :, index ); %eta_matrix=(input [f1 f2 T], Scenario)
-
-     %Compute statistical parameters
+    %Compute statistical parameters
      mean_cost(counter)=mean(cost(1:counter));
      std_cost(counter)=std(cost(1:counter));
   
@@ -322,8 +329,10 @@ for i = 1:N_ic:length(full_cost(:,2))
     scenario.B(:,:,counter) = stoch_B(:,:,index);
     scenario.C(:,:,counter) = stoch_C(:,:,index);
     scenario.D(:,:,counter) = stoch_D(:,:,index);
+   
 end
 
+toc
 
 
 %% Compare effectivness of eta with each scenario
@@ -333,8 +342,8 @@ theta_opt_matrix = zeros(6,N_scenarios);
 
 
 identified_model = cell(N_scenarios,1);
-
-for i = 1:N_scenarios       % iterate on eta
+tic
+parfor i = 1:N_scenarios       % iterate on eta
     sim_matrix = st;
     for j = 1:N_scenarios   % iterate on scenario
         sim_matrix.A =  scenario.A(:,:,j);
@@ -350,7 +359,7 @@ for i = 1:N_scenarios       % iterate on eta
         end
     end
 end
-
+toc
 % compute eta that guarantees best average performance
 eta_avg_vect = mean(cost_matrix,2);
 [~,index] = min(eta_avg_vect);
@@ -419,7 +428,7 @@ tiledlayout(6,1);
 
 hold on
 grid minor
-bar(nexttile,abs([estimation_error,error_opt(:,1),error_opt(:,2)]));
+bar(nexttile,abs([estimation_error,error_opt(:,2)]));
 
 title('Estimation error','Interpreter','latex')
 set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
@@ -529,5 +538,52 @@ xlabel('Scenario index')
 zlabel('Cost')
 ylim([0 73])
 view(-90,90)
+
+%%
+%save ALL_DATA_70-5_3000iter
+
+%% Varianza PLOT AVG-BEST SOLUTION
+figure
+subplot(3,2,1)
+bar([(identification_opt{2, 1}.covariance(1,1)),(identification.covariance(1,1))]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Xu_{opt}','Xu_{Task1}'});
+
+grid on
+
+subplot(3,2,2)
+bar([(identification_opt{2, 1}.covariance(2,2)),(identification.covariance(2,2))]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Xq_{opt}','Xq_{Task1}'});
+
+grid on
+
+subplot(3,2,3)
+bar([(identification_opt{2, 1}.covariance(3,3)),(identification.covariance(3,3))]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Mu_{opt}','Mu_{Task1}'});
+
+grid on
+
+subplot(3,2,4)
+bar([(identification_opt{2, 1}.covariance(4,4)),(identification.covariance(4,4))]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Mq_{opt}','Mq_{Task1}'});
+
+grid on
+
+subplot(3,2,5)
+bar([(identification_opt{2, 1}.covariance(5,5)),(identification.covariance(5,5))]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Xd_{opt}','Xd_{Task1}'});
+
+grid on
+
+subplot(3,2,6)
+bar([(identification_opt{2, 1}.covariance(6,6)),(identification.covariance(6,6))]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Md_{opt}','Md_{Task1}'});
+
+grid on
 
 %% END OF CODE
