@@ -22,7 +22,7 @@ normalized_cov = abs(100*diag(identification.covariance)./identification.paramet
 
 %cost function
 J = sum(normalized_cov);
-
+%J=sum(diag(identification.covariance));
 
 if nargout==2
     varargout{1}=identification;
