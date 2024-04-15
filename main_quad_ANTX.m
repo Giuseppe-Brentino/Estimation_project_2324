@@ -253,7 +253,7 @@ tic
 set_param('Simulator_Single_Axis',"FastRestart","on");
 st = struct;
 
-for i = 1:N_sim
+parfor i = 1:N_sim
 
     estimated_matrix = st;
     % build state-space matrices
