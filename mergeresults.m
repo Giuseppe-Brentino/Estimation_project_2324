@@ -5,6 +5,7 @@ rng default;
 
 addpath('datasets','common','common/simulator-toolbox','common/simulator-toolbox/attitude_library','common/simulator-toolbox/trajectory_library');
 addpath('functions');
+addpath('DroneAnimation');
 
 load_system('Simulator_Single_Axis');
 set_param('Simulator_Single_Axis',"FastRestart","off")
@@ -296,15 +297,16 @@ legend('Sim','True')
 title("Pitch rate FIT" +identification_opt{1, 1}.fit(1))
 grid on
 
-figure
-plot(time,simulation.theta.*(180/pi))
-title("Theta Real [deg]")
-grid on
+% figure
+% plot(time,simulation.theta.*(180/pi))
+% title("Theta Real [deg]")
+% grid on
 
 figure
 plot(t,simulation_estimate_opt.theta.*(180/pi))
 hold on
-%plot(t,,'--')
+figure
+plot(t,simulation.theta.*(180/pi),'--')
 legend('Sim','True')
 title("Theta")
 grid on

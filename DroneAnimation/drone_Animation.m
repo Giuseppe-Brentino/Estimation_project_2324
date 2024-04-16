@@ -3,10 +3,10 @@ function animation = drone_Animation(x,y,z,roll,pitch,yaw)
 % Define design parameters
 D2R = pi/180;
 R2D = 180/pi;
-b   = 0.6;   % the length of total square cover by whole body of quadcopter in meter
-a   = b/3;   % the legth of small square base of quadcopter(b/4)
+b   = 0.2;   % the length of total square cover by whole body of quadcopter in meter
+a   = b/4;   % the legth of small square base of quadcopter(b/4)
 H   = 0.06;  % height of drone in Z direction (4cm)
-H_m = H+H/2; % height of motor in z direction (5 cm)
+H_m = H/2; % height of motor in z direction (5 cm)
 r_p = b/4;   % radius of propeller
 %% Conversions
 ro = 45*D2R;                   % angle by which rotate the base of quadcopter
@@ -28,7 +28,7 @@ zp = zeros(1,length(to));
  view(33,11);
  grid on;
  axis equal;
- xlim([-1.5 1.5]); ylim([-1.5 1.5]); zlim([-1.5 1.5]);
+ xlim([-0.2 0.2]); ylim([-0.2 0.2]); zlim([-0.2 0.2]);
  title('Drone Animation')
  xlabel('X[m]');
  ylabel('Y[m]');
@@ -61,12 +61,15 @@ zp = zeros(1,length(to));
 %% create a group object and parent surface
   combinedobject = hgtransform('parent',hg );
   set(drone,'parent',combinedobject)
+  direction = [0 0 1];
+  rotate( drone,direction,45)
+
 %  drawnow
  
- for i = 1:length(x)
+ for i = 1:length(pitch)
   
      ba = plot3(x(1:i),y(1:i),z(1:i), 'b:','LineWidth',1.5);
-   
+     
      translation = makehgtform('translate',...
                                [x(i) y(i) z(i)]);
      %set(combinedobject, 'matrix',translation);
@@ -76,11 +79,12 @@ zp = zeros(1,length(to));
      %scaling = makehgtform('scale',1-i/20);
      set(combinedobject,'matrix',...
           translation*rotation3*rotation2*rotation1);
-      
+
       %movieVector(i) =  getframe(fig1);
         %delete(b);
+   
      drawnow
-     pause(0.02);
+     pause(1e-90000)
  end
 
  
