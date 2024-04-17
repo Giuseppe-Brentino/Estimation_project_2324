@@ -159,7 +159,8 @@ exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
   plot(real_sys) %y1=q e y2=ax
   figure
   compare(fft(real_sys), identification.estimated_model) %spiegare il perchè grande differenza per freq basse
-
+   figure
+   bode(identification.estimated_model)%y1=q y2=a
 
 % Z-P PLOT
 est_sys = ss(identification.matrix{1}, identification.matrix{2}, identification.matrix{3}, identification.matrix{4});
@@ -563,5 +564,17 @@ view(-90,90)
 set(gca,'CLim',[0 0.6]);
 exportStandardizedFigure(gcf,'J3D_top_view',1, 'addMarkers', false, ...
   'WHratio',1)
+%% Scatter plot
+cost_scatter=cost';
+figure  
+scatter(2*pi*eta_matrix(1,:),2*pi*eta_matrix(2,:),[],cost_scatter,'filled')
+c=colorbar;
+c.Label.String='Cost';
+set(gca,'CLim',[0 0.01])
+grid on
+xlabel('$f_1$ [rad/s]')
+ylabel('$f_2$ [rad/s]')
+
+
 
 %% END OF CODE
