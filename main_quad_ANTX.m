@@ -100,7 +100,8 @@ time = 0:ctrl.sample_time:simulation_time;
 
 %%% TODO FARSI COMMENTARE LA FUNZIONE DA CHATGPT
 odefun= 'drone_model';
-[identification, estimation_error, measures] = Model_identification(ExcitationM,model,ctrl,delay,seed,noise,odefun,simulation_time,real_parameters);
+[identification, estimation_error, measures] = Model_identification...
+    (ExcitationM,model,ctrl,delay,seed,noise,odefun,simulation_time,real_parameters);
 
 normalized_cov = abs(100*diag(identification.covariance)./identification.parameters);
 
@@ -119,8 +120,8 @@ grid on
 xlabel('Time [s]')
 ylabel('Normalized moment [-]')
 axis tight
-%%exportStandardizedFigure(gcf,'input_plot',0.67, 'addMarkers', false, ...
- %       %%% 'WHratio', 1.8)
+exportStandardizedFigure(gcf,'input_plot',0.67, 'addMarkers', false, ...
+       'WHratio', 1.8)
 
 long_acc = figure;
 plot(time,measures(:,3))
@@ -129,8 +130,8 @@ grid on
 axis tight
 xlabel('Time [s]')
 ylabel('Acceleration [$m/s^2$]')
-%%exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false, ...
-    %    %%% 'WHratio', 1.8)
+exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false, ...
+    'WHratio', 1.8)
 
 pitch_rate_plot = figure;
 plot(time,measures(:,2))
@@ -139,8 +140,8 @@ grid on
 axis tight
 xlabel('Time [s]')
 ylabel('Pitch rate [rad/s]')
-%exportStandardizedFigure(gcf,'pitchrate',0.67, 'addMarkers', false, ...
-        %%% 'WHratio', 1.8)
+exportStandardizedFigure(gcf,'pitchrate',0.67, 'addMarkers', false, ...
+         'WHratio', 1.8)
 
 error_plot = figure;
 bar(estimation_error);
@@ -149,8 +150,8 @@ set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
 ylabel('error [%]')
 ylim([-0.12 0.15])
 grid on
-%exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
-        %%% 'WHratio', 1.3)
+exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
+        'WHratio', 1.3)
 
 % COMPARE
   real_sys = iddata([measures(:,2) measures(:,3)],measures(:,1), ctrl.sample_time); %misure2=q e misure3=ax
@@ -208,8 +209,8 @@ for i = 1:length(a)
     set(a(i), 'linewidth',2);  %change linewidth
 end
 set(gca,'color','w');
-%exportStandardizedFigure(gcf,'pz_plot',0.67, 'addMarkers', false, ...
-        %%% 'WHratio', 1.3)
+exportStandardizedFigure(gcf,'pz_plot',0.67, 'addMarkers', false, ...
+     'WHratio', 1.3)
 
 %% TASK 2
 
@@ -240,16 +241,13 @@ b_constr = 0;
 
 
 % initial input sequence guess
-%%%%%%%%%% DA DISCUTERE SE HA SENSO USARE SEMPRE LE STESS I.C. %%%%%%%%%%%%
-eta0_mat = lb + (ub-lb) .* rand(3,N_sim); %genera in maniera random i valori eta iniziali con cui parte la simulazione
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+eta0_mat = lb + (ub-lb) .* rand(3,N_sim); 
 
 % solver options
 % opts = optimoptions(@ga,'Display','none','PlotFcn','gaplotbestf');
 tic
 opts = optimoptions(@fmincon,'Algorithm', 'active-set','MaxIter',3000,'Display','none');
 
-tic
 set_param('Simulator_Single_Axis',"FastRestart","on");
 st = struct;
 
@@ -280,17 +278,13 @@ parfor i = 1:N_sim
     % optimize input sequence
     eta0 = eta0_mat(:,i);
 
-   % [full_eta(:,i),full_cost(i,2),exitflag,~] = ga(@(x) obj_function(x,estimated_matrix,ctrl,delay,seed,noise,odefun),3,A_constr,b_constr,[],[],lb,ub,[],...
-   %     opts);
+    % optimization
     [full_eta(:,i),full_cost(i,2)] = fmincon(@obj_function,eta0,A_constr,b_constr,[],[],lb,ub,[],...
         opts,estimated_matrix,ctrl,delay,seed,noise,odefun);
 
 
 end
-toc
-save Task2_1section
-load("chirp.mat")
-sound(y)
+
 %% Cost function analysis
 
 % Initialize variables
@@ -389,6 +383,33 @@ J_opt(i) = sum(normalized_cov);
 
 end
 
+%% Compare the inputs
+
+J_old_input = zeros(N_scenarios,1);
+
+for i=1:N_scenarios
+
+    sim_matrix.A =  scenario.A(:,:,j);
+    sim_matrix.B =  scenario.B(:,:,j);
+    sim_matrix.C =  scenario.C(:,:,j);
+    sim_matrix.D =  scenario.D(:,:,j);
+
+    [identified_model_old_input] = Model_identification(ExcitationM,sim_matrix,...
+        ctrl,delay,seed,noise,odefun,simulation_time,real_parameters);
+
+    normalized_cov = abs(100*diag(identified_model_old_input.covariance)./...
+        identified_model_old_input.parameters);
+    %cost function
+    J_old_input(i) = sum(normalized_cov);
+
+end
+
+ J_old_input_mean=mean(J_scenario);
+ J_old_input_min=min(J_scenario);
+ J_old_input_max=max(J_scenario);
+ J_old_input_opt_mean=mean(cost_matrix(index,:));
+ J_old_input_opt_max=max(cost_matrix(index,:));
+ J_old_input_opt_min=min(cost_matrix(index,:));
 
 
 %% plot task 2
@@ -405,7 +426,7 @@ legend('Mean cost','Trend');
 ylabel('Mean');
 xlabel('Iterations')
 title('Mean cost evolution')
-%exportStandardizedFigure(gcf,'mean_cost_plot',0.67, 'addMarkers', false)
+exportStandardizedFigure(gcf,'mean_cost_plot',0.67, 'addMarkers', false)
 
 % std
 filtered_std = movmean(std_cost,10);
@@ -419,7 +440,7 @@ legend('Cost standard deviation','Trend');
 ylabel('Standard Deviation');
 xlabel('Iterations')
 title('Standard deviation evolution')
-%exportStandardizedFigure(gcf,'std_cost_plot',0.67, 'addMarkers', false)
+exportStandardizedFigure(gcf,'std_cost_plot',0.67, 'addMarkers', false)
 
 
 % Comparison of estimation error
@@ -429,43 +450,40 @@ tiledlayout(6,1);
 hold on
 grid minor
 bar(nexttile,abs([estimation_error,error_opt(:,2)]));
-
 title('Estimation error','Interpreter','latex')
 set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
-ylim([0 0.2])
-legend('Initial Input','Input $\eta_{wc}$', 'Input $\eta_{avg}$')
-%exportStandardizedFigure(gcf,'error_opt_hist_plot',0.67, 'addMarkers', false)
+ylim([0 0.15])
+legend('Initial Input','Input $\eta_{opt}$')
+exportStandardizedFigure(gcf,'error_opt_hist_plot',0.67, 'addMarkers', false)
 
-nbins=15;
-
-pd = fitdist(cost,'Exponential');
+%Cost distribution
 figure
-plot(pd)
+histogram(cost,nbins)
 xlabel('Cost')
 ylabel('Number of occurrencies')
-%exportStandardizedFigure(gcf,'Cost_dist_plot',0.67, 'addMarkers', false,...
-   % 'changeColors',false)
+exportStandardizedFigure(gcf,'Cost_dist_plot',0.67, 'addMarkers', false)
 
+% Input data distribution
 figure
 histogram(eta_matrix(1,:),nbins)
 grid on
 xlabel('$f_1$ [Hz]')
 ylabel('Number of occurencies')
-%exportStandardizedFigure(gcf,'f1_dist_plot',0.67, 'addMarkers', false)
+exportStandardizedFigure(gcf,'f1_dist_plot',0.67, 'addMarkers', false)
 
 figure
 histogram(eta_matrix(2,:),nbins)
 grid on
 xlabel('$f_2$ [Hz]')
 ylabel('Number of occurencies')
-%exportStandardizedFigure(gcf,'f2_dist_plot',0.67, 'addMarkers', false)
+exportStandardizedFigure(gcf,'f2_dist_plot',0.67, 'addMarkers', false)
 
 figure
 histogram(eta_matrix(3,:),nbins)
 grid on
 xlabel('T [s]')
 ylabel('Number of occurencies')
-%exportStandardizedFigure(gcf,'T_dist_plot',0.67, 'addMarkers', false)
+exportStandardizedFigure(gcf,'T_dist_plot',0.67, 'addMarkers', false)
 
 %Plot Input ETA_AVG
 
@@ -510,10 +528,10 @@ plot(ExcitationM_WC(:,1),ExcitationM_WC(:,2))
 xlabel('Time [s]')
 ylabel('Normalized moment [-]')
 title('Optimal excitation moment')
-%exportStandardizedFigure(gcf,'excitation_opt_plot',1, 'addMarkers', false, ...
-   %%% 'WHratio',3)
+exportStandardizedFigure(gcf,'excitation_opt_plot',1, 'addMarkers', false, ...
+  'WHratio',3)
 
-%surface plot scenario-eta-cost
+%bar plot scenario-eta-cost
 figure
 b=bar3(cost_matrix);
 c = colorbar;
@@ -525,7 +543,11 @@ end
 ylabel('Input sequence index')
 xlabel('Scenario index')
 zlabel('Cost')
+set(gca,'CLim',[0 0.6]);
 view(62,22)
+ylim([0 100])
+exportStandardizedFigure(gcf,'J3D',1, 'addMarkers', false, ...
+  'WHratio',1)
 
 figure
 b=bar3(cost_matrix);
@@ -536,54 +558,10 @@ end
 ylabel('Input sequence index')
 xlabel('Scenario index')
 zlabel('Cost')
-ylim([0 73])
+ylim([0 100])
 view(-90,90)
-
-%%
-%save ALL_DATA_70-5_3000iter
-
-%% Varianza PLOT AVG-BEST SOLUTION
-figure
-subplot(3,2,1)
-bar([(identification_opt{2, 1}.covariance(1,1)),(identification.covariance(1,1))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Xu_{opt}','Xu_{Task1}'});
-
-grid on
-
-subplot(3,2,2)
-bar([(identification_opt{2, 1}.covariance(2,2)),(identification.covariance(2,2))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Xq_{opt}','Xq_{Task1}'});
-
-grid on
-
-subplot(3,2,3)
-bar([(identification_opt{2, 1}.covariance(3,3)),(identification.covariance(3,3))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Mu_{opt}','Mu_{Task1}'});
-
-grid on
-
-subplot(3,2,4)
-bar([(identification_opt{2, 1}.covariance(4,4)),(identification.covariance(4,4))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Mq_{opt}','Mq_{Task1}'});
-
-grid on
-
-subplot(3,2,5)
-bar([(identification_opt{2, 1}.covariance(5,5)),(identification.covariance(5,5))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Xd_{opt}','Xd_{Task1}'});
-
-grid on
-
-subplot(3,2,6)
-bar([(identification_opt{2, 1}.covariance(6,6)),(identification.covariance(6,6))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Md_{opt}','Md_{Task1}'});
-
-grid on
+set(gca,'CLim',[0 0.6]);
+exportStandardizedFigure(gcf,'J3D_top_view',1, 'addMarkers', false, ...
+  'WHratio',1)
 
 %% END OF CODE
