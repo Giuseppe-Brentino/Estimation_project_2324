@@ -1,4 +1,4 @@
-function animation = drone_Animation(x,y,z,roll,pitch,yaw) 
+function movieVector = drone_Animation(x,y,z,roll,pitch,yaw) 
 
 % Define design parameters
 D2R = pi/180;
@@ -24,6 +24,7 @@ yp = r_p*sin(to);
 zp = zeros(1,length(to));
 %% Define Figure plot
  fig1 = figure('pos', [0 50 800 600]);
+ fig1.Color = [1 1 1];
  hg   = gca;
  view(33,11);
  grid on;
@@ -61,15 +62,13 @@ zp = zeros(1,length(to));
 %% create a group object and parent surface
   combinedobject = hgtransform('parent',hg );
   set(drone,'parent',combinedobject)
-  direction = [0 0 1];
-  rotate( drone,direction,45)
-
+  direction = [0,0,1];
+  rotate(drone,direction,45)
 %  drawnow
- 
- for i = 1:length(pitch)
+ for i = 1:length(x)
   
      ba = plot3(x(1:i),y(1:i),z(1:i), 'b:','LineWidth',1.5);
-     
+   
      translation = makehgtform('translate',...
                                [x(i) y(i) z(i)]);
      %set(combinedobject, 'matrix',translation);
@@ -82,9 +81,11 @@ zp = zeros(1,length(to));
 
       movieVector(i) =  getframe(fig1);
         %delete(b);
-   
      drawnow
-     pause(0)
+
+     pause(0.02);
+
  end
 
- 
+
+
