@@ -159,7 +159,8 @@ exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
   plot(real_sys) %y1=q e y2=ax
   figure
   compare(fft(real_sys), identification.estimated_model) %spiegare il perchè grande differenza per freq basse
-
+   figure
+   bode(identification.estimated_model)%y1=q y2=a
 
 % Z-P PLOT
 est_sys = ss(identification.matrix{1}, identification.matrix{2}, identification.matrix{3}, identification.matrix{4});
@@ -573,6 +574,7 @@ set(gca,'CLim',[0 0.01])
 grid on
 xlabel('$f_1$ [rad/s]')
 ylabel('$f_2$ [rad/s]')
+
 
 
 %% END OF CODE
