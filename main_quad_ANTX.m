@@ -563,5 +563,16 @@ view(-90,90)
 set(gca,'CLim',[0 0.6]);
 exportStandardizedFigure(gcf,'J3D_top_view',1, 'addMarkers', false, ...
   'WHratio',1)
+%% Scatter plot
+cost_scatter=cost';
+figure  
+scatter(2*pi*eta_matrix(1,:),2*pi*eta_matrix(2,:),[],cost_scatter,'filled')
+c=colorbar;
+c.Label.String='Cost';
+set(gca,'CLim',[0 0.01])
+grid on
+xlabel('$f_1$ [rad/s]')
+ylabel('$f_2$ [rad/s]')
+
 
 %% END OF CODE
