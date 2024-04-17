@@ -1,16 +1,31 @@
 close all
 clc
- 
+
+addpath('datasets','common','common/simulator-toolbox','common/simulator-toolbox/attitude_library','common/simulator-toolbox/trajectory_library');
+addpath('functions');
+addpath('DroneAnimation');
+
+load_system('Simulator_Single_Axis');
+set_param('Simulator_Single_Axis',"FastRestart","off")
+
 % Drone Animation for Estimation and Learning in Aerospace Project A.Y.
 % 23-24
 % Input: simulation_estimate_opt.theta , ctrl.sample_time , simulation_time
-x=out_simulink.x.Data;
-t_x=out_simulink.x.Time;
-theta=out_simulink.theta;
-t_theta=linspace(0, simulation_time, length(theta))';
+
+ExcitationM=ExcitationM_WC;
+t=ExcitationM(:,1);
+
+simulation_time=t(end)-t(1); 
+
+out= sim('Simulator_Single_Axis','SrcWorkspace', 'current'); %usa A, B, C, D del sistema originale 
+
+x=out.x_vero.Data;
+t_x=out.x_vero.Time;
+theta=out.theta_vero.Data;
+t_theta=out.theta_vero.Time;
  %% 1. define the motion coordinates 
  % roll , pitch and yaw input in degree 
-    t    = 0:ctrl.sample_time:simulation_time;   % simulation time for 10 second
+    t    = t_x;   % simulation time for 10 second
     z     = 0*t;        % z in meter 
     y     = 0*t; 
     x     = x;
@@ -19,7 +34,10 @@ t_theta=linspace(0, simulation_time, length(theta))';
     pitch = theta*180/pi;
  %% 6. animate by using the function makehgtform
  % Function for ANimation of QuadCopter
+tic
   drone_Animation(x,y,z,roll,pitch,yaw) 
+toc 
+
   %%
 fig2 = figure;
 for i = 1:length(theta)

@@ -80,11 +80,11 @@ zp = zeros(1,length(to));
      set(combinedobject,'matrix',...
           translation*rotation3*rotation2*rotation1);
 
-      %movieVector(i) =  getframe(fig1);
+      movieVector(i) =  getframe(fig1);
         %delete(b);
    
      drawnow
-     pause(1e-90000)
+     pause(0)
  end
 
  
