@@ -7,7 +7,7 @@ D=model.D;
 
 
 simulation = sim('Simulator_Single_Axis','SrcWorkspace', 'current');
-data = struct;
+
 data.ax = simulation.ax.Data;
 data.q = simulation.q.Data;
 input = simulation.Mtot.Data;
@@ -37,8 +37,23 @@ if nargout>=2
     real_parameters = varargin{1};
     varargout{1} = (identification.parameters-real_parameters) ./ real_parameters * 100; %Estimation Error
 end
-if nargout==3
-     varargout{2} = [input output]; 
+if nargout>=3
+    varargout{2} = [input output];
+end
+if nargout==4
+    A=identification.matrix{1};
+    B=identification.matrix{2};
+    C = [1 0 0 ; identification.matrix{3}(1,:) ; 0 0 1 ; identification.matrix{3}(2,:)];
+    D = [0; 0 ; identification.matrix{4}];
+
+    simulation = sim('Simulator_Single_Axis','SrcWorkspace', 'current');
+    sim_est.ax = simulation.ax.Data;
+    sim_est.q = simulation.q.Data;
+    varargout{3} = sim_est;
+end
 end
 
-end
+
+
+
+

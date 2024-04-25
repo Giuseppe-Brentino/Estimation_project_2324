@@ -98,9 +98,8 @@ load_system('Simulator_Single_Axis');
 set_param('Simulator_Single_Axis',"FastRestart","off");
 time = 0:ctrl.sample_time:simulation_time;
 
-%%% TODO FARSI COMMENTARE LA FUNZIONE DA CHATGPT
 odefun= 'drone_model';
-[identification, estimation_error, measures] = Model_identification...
+[identification, estimation_error, measures, simulation] = Model_identification...
     (ExcitationM,model,ctrl,delay,seed,noise,odefun,simulation_time,real_parameters);
 
 normalized_cov = abs(100*diag(identification.covariance)./identification.parameters);
@@ -109,39 +108,44 @@ normalized_cov = abs(100*diag(identification.covariance)./identification.paramet
 J1 = sum(normalized_cov);
 %% plots
 
-input_seq_plot = figure;
-plot(time,measures(:,1),"b")
-grid on
-hold on
-plot(ExcitationM(:,1),ExcitationM(:,2),"r")
-legend('Total Moment','Excitation Moment','Location','best')
-title('Total Moment with excitation')
-grid on
-xlabel('Time [s]')
-ylabel('Normalized moment [-]')
-axis tight
-exportStandardizedFigure(gcf,'input_plot',0.67, 'addMarkers', false, ...
-       'WHratio', 1.8)
+% input_seq_plot = figure;
+% plot(time,measures(:,1),"b")
+% grid on
+% hold on
+% plot(ExcitationM(:,1),ExcitationM(:,2),"r")
+% legend('Total Moment','Excitation Moment','Location','best')
+% title('Total Moment with excitation')
+% grid on
+% xlabel('Time [s]')
+% ylabel('Normalized moment [-]')
+% axis tight
+% exportStandardizedFigure(gcf,'input_plot',0.67, 'addMarkers', false, ...
+%        'WHratio', 1.8)
 
 long_acc = figure;
+hold on
 plot(time,measures(:,3))
+plot(time,simulation.ax,'--')
 title('Longitudinal Acceleration')
 grid on
 axis tight
 xlabel('Time [s]')
 ylabel('Acceleration [$m/s^2$]')
-exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false, ...
-    'WHratio', 1.8)
+legend('Real model','Estimated model')
+title(sprintf('Longitudinal Acceleration. FIT: %.2f %%',identification.fit(2)));
+exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false)
 
 pitch_rate_plot = figure;
+hold on
 plot(time,measures(:,2))
-title('Pitch rate')
+plot(time,simulation.q,'--')
+title(sprintf('Pitch rate. FIT: %.2f %%',identification.fit(1)));
 grid on
 axis tight
 xlabel('Time [s]')
 ylabel('Pitch rate [rad/s]')
-exportStandardizedFigure(gcf,'pitchrate',0.67, 'addMarkers', false, ...
-         'WHratio', 1.8)
+legend('Real model','Estimated model')
+exportStandardizedFigure(gcf,'pitchrate',0.67, 'addMarkers', false)
 
 error_plot = figure;
 bar(estimation_error);
@@ -154,13 +158,36 @@ exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
         'WHratio', 1.3)
 
 % COMPARE
-  real_sys = iddata([measures(:,2) measures(:,3)],measures(:,1), ctrl.sample_time); %misure2=q e misure3=ax
-  figure
-  plot(real_sys) %y1=q e y2=ax
-  figure
-  compare(fft(real_sys), identification.estimated_model) %spiegare il perchè grande differenza per freq basse
-   figure
-   bode(identification.estimated_model)%y1=q y2=a
+ wmin = -3;  wmax =3;  Npoints = 1000;   
+ w = logspace(wmin,wmax,Npoints);
+ [mag,~] = bode(identification.estimated_model,w);  
+
+    mag_q = squeeze(20*log10(mag(1,1,:))); 
+    mag_acc = squeeze(20*log10(mag(2,1,:)));
+
+figure;    
+subplot(2,1,1)
+loglog(w,mag_acc)
+hold on
+xline(1e-2*2*pi)
+xline(50*2*pi)
+xlabel('Frequency [rad/s]')
+ylabel('Acceleration [dB]')
+xlim([w(1) w(end)])
+ylim([15 30])
+
+subplot(2,1,2)
+semilogx(w,mag_q,'DisplayName','Magnitude')
+grid on
+hold on
+xline(1e-2*2*pi,'DisplayName','Lower bound')
+xline(50*2*pi,'DisplayName','Upper bound')
+xlim([w(1) w(end)])
+xlabel('Frequency [rad/s]')
+ylabel('Pitch rate [dB]')
+legend;
+
+exportStandardizedFigure(gcf,'bode',0.67, 'addMarkers', false,'WHRatio',0.7)
 
 % Z-P PLOT
 est_sys = ss(identification.matrix{1}, identification.matrix{2}, identification.matrix{3}, identification.matrix{4});
@@ -574,6 +601,8 @@ set(gca,'CLim',[0 0.01])
 grid on
 xlabel('$f_1$ [rad/s]')
 ylabel('$f_2$ [rad/s]')
+exportStandardizedFigure(gcf,'scatterPlot',0.67, 'addMarkers', false, ...
+  'WHratio',1.67,'changecolors',false)
 
 
 
