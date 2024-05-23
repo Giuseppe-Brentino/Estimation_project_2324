@@ -21,7 +21,7 @@ rng default;
 
 addpath('datasets','common','common/simulator-toolbox','common/simulator-toolbox/attitude_library','common/simulator-toolbox/trajectory_library');
 addpath('functions');
-% load ALL_DATA_72-5_DEF.mat
+
 %% Model parameters
 
 % Initial model (state: longitudinal velocity, pitch rate, pitch angle; input: normalised pitching moment; outputs: state and longitudinal acceleration)
@@ -262,7 +262,7 @@ full_cost = zeros(N_sim,2);
 full_cost(:,1) = repelem(1:N_scenarios,N_ic)'; %mette in ordine sparso gli elementi 
 
 % constraints
-lb = [0.01; 0.01; 20]; %spiegare da dove li abbiamo presi questi constrain 
+lb = [0.01; 0.01; 20]; 
 ub = [10; 50; 90];
 A_constr = [1 -1 0];
 b_constr = 0;
@@ -594,15 +594,18 @@ exportStandardizedFigure(gcf,'J3D_top_view',1, 'addMarkers', false, ...
 %% Scatter plot
 cost_scatter=cost';
 figure  
-scatter(2*pi*eta_matrix(1,:),2*pi*eta_matrix(2,:),[],cost_scatter,'filled')
+hold on
+scatter(2*pi*eta_matrix(1,:),2*pi*eta_matrix(2,:),[],cost_scatter,'filled','HandleVisibility','off')
 c=colorbar;
 c.Label.String='Cost';
-set(gca,'CLim',[0 0.01])
+set(gca,'CLim',[0 0.01],'xscale','log','yscale','log');
+plot(2*pi*eta_matrix(1,index),2*pi*eta_matrix(2,index),'*','DisplayName','Optimal Solution');
 grid on
 xlabel('$f_1$ [rad/s]')
 ylabel('$f_2$ [rad/s]')
+legend
 exportStandardizedFigure(gcf,'scatterPlot',0.67, 'addMarkers', false, ...
-  'WHratio',1.67,'changecolors',false)
+  'WHratio',1,'changecolors',false)
 
 
 

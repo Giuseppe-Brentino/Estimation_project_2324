@@ -108,162 +108,6 @@ end
 
 %save('mergedData')
 
-%%
-cost=[Data70.cost; Data30.cost];
-counter=0;
-for i=1:100
-    counter=counter+1;
- %Compute statistical parameters
-     mean_cost(counter)=mean(cost(1:counter));
-     std_cost(counter)=std(cost(1:counter));
-end
-%%
-% mean
-filtered_mean = movmean(mean_cost,10);
-filtered_mean(1:10) =movmean(mean_cost(1:10),3);
-figure();
-hold on
-grid on
-plot( mean_cost);
-plot( filtered_mean );
-legend('Mean cost','Trend');
-ylabel('Mean');
-xlabel('Iterations')
-title('Mean cost evolution')
-%exportStandardizedFigure(gcf,'mean_cost_plot',0.67, 'addMarkers', false)
-
-% std
-filtered_std = movmean(std_cost,10);
-filtered_std(1:10) =movmean(std_cost(1:10),3);
-figure();
-hold on
-grid on
-plot( std_cost);
-plot( filtered_std );
-legend('Cost standard deviation','Trend');
-ylabel('Standard Deviation');
-xlabel('Iterations')
-title('Standard deviation evolution')
-%exportStandardizedFigure(gcf,'std_cost_plot',0.67, 'addMarkers', false)
-
-
-% Comparison of estimation error
-error_plot = figure;
-tiledlayout(6,1);
-
-hold on
-grid minor
-bar(nexttile,abs([estimation_error,error_opt(:,2),error_opt(:,1)]));
-
-title('Estimation error','Interpreter','latex')
-set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
-ylim([0 0.2])
-legend('Initial Input', 'Input \eta_{avg}', 'Input \eta_{wc}')
-%exportStandardizedFigure(gcf,'error_opt_hist_plot',0.67, 'addMarkers', false)
-
-nbins=15;
-
-pd = fitdist(cost,'Exponential');
-figure
-plot(pd)
-xlabel('Cost')
-ylabel('Number of occurrencies')
-%exportStandardizedFigure(gcf,'Cost_dist_plot',0.67, 'addMarkers', false,...
-   % 'changeColors',false)
-
-figure
-histogram(eta_matrix(1,:),nbins)
-grid on
-xlabel('$f_1$ [Hz]')
-ylabel('Number of occurencies')
-%exportStandardizedFigure(gcf,'f1_dist_plot',0.67, 'addMarkers', false)
-
-figure
-histogram(eta_matrix(2,:),nbins)
-grid on
-xlabel('$f_2$ [Hz]')
-ylabel('Number of occurencies')
-%exportStandardizedFigure(gcf,'f2_dist_plot',0.67, 'addMarkers', false)
-
-figure
-histogram(eta_matrix(3,:),nbins)
-grid on
-xlabel('T [s]')
-ylabel('Number of occurencies')
-%exportStandardizedFigure(gcf,'T_dist_plot',0.67, 'addMarkers', false)
-
-%Plot Input ETA_AVG
-
-f1_avg = eta_avg(1);
-f2_avg = eta_avg(2);
-T_avg = eta_avg(3);
-
-wait_time = 5;
-simulation_time = 2*wait_time + T_avg;
-% input
-wait_vector = zeros(round(wait_time/ctrl.sample_time),1);
-excitation_time = (0:ctrl.sample_time:T_avg)';
-freq_fun = 2*pi*excitation_time.*(f1_avg + (f2_avg-f1_avg)/T_avg.*excitation_time);
-excitation_value = [wait_vector; 0.1*sin(freq_fun); wait_vector] ;
-excitation_time_AVG = (0:ctrl.sample_time:simulation_time)';
-ExcitationM_AVG=[excitation_time_AVG, excitation_value];         % optimized input sequence
-figure
-plot(ExcitationM_AVG(:,1),ExcitationM_AVG(:,2))
-
-%Plot Input ETA_WC
-
-f1_wc = eta_wc(1);
-f2_wc = eta_wc(2);
-T_wc = eta_wc(3);
-
-wait_time = 5;
-simulation_time = 2*wait_time + T_wc;
-
-% input
-wait_vector = zeros(round(wait_time/ctrl.sample_time),1);
-excitation_time = (0:ctrl.sample_time:T_wc)';
-freq_fun = 2*pi*excitation_time.*(f1_wc + (f2_wc-f1_wc)/T_wc.*excitation_time);
-excitation_value = [wait_vector; 0.1*sin(freq_fun); wait_vector] ;
-excitation_time_WC = (0:ctrl.sample_time:simulation_time)';
-ExcitationM_WC=[excitation_time_WC, excitation_value];         % optimized input sequence
-
-excitation_opt = figure();
-set(gcf, 'Position', get(0, 'Screensize'));
-hold on 
-grid on
-plot(ExcitationM_WC(:,1),ExcitationM_WC(:,2))
-xlabel('Time [s]')
-ylabel('Normalized moment [-]')
-title('Optimal excitation moment')
-%exportStandardizedFigure(gcf,'excitation_opt_plot',1, 'addMarkers', false, ...
-   %%% 'WHratio',3)
-
-%surface plot scenario-eta-cost
-figure
-b=bar3(cost_matrix);
-c = colorbar;
-c.Label.String = 'Cost';
-for k = 1:length(b)
-    zdata = b(k).ZData;     
-    b(k).CData = zdata;     
-end
-ylabel('Input sequence index')
-xlabel('Scenario index')
-zlabel('Cost')
-view(62,22)
-
-figure
-b=bar3(cost_matrix);
-for k = 1:length(b)
-    zdata = b(k).ZData;     
-    b(k).CData = zdata;     
-end
-ylabel('Input sequence index')
-xlabel('Scenario index')
-zlabel('Cost')
-ylim([0 73])
-view(-90,90)
-
 
 %%
 %Grafici nel tempo OPTIMAL INPUT 
@@ -284,82 +128,23 @@ figure
 plot(t,simulation_estimate_opt.ax.Data)
 hold on
 plot(t,simulation.ax.Data,'--')
-legend('Sim','True')
-title("Longitudinal Acceleration FIT " +identification_opt{1, 1}.fit(2))
+legend('Estimated model','Real model')
+title(sprintf('Longitudinal Acceleration. FIT: %.2f %%',identification_opt{1, 1}.fit(2)))
 grid on
-
+xlabel('Time [s]')
+ylabel('Acceleration [$m/s^2$]')
+exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false);
 
 figure
 plot(t,simulation_estimate_opt.q.Data)
 hold on
 plot(t,simulation.q.Data,'--')
-legend('Sim','True')
-title("Pitch rate FIT" +identification_opt{1, 1}.fit(1))
+legend('Estimated model','Real model')
+title(sprintf('Pitch rate. FIT: %.2f %%',identification_opt{1, 1}.fit(1)))
 grid on
-
-% figure
-% plot(time,simulation.theta.*(180/pi))
-% title("Theta Real [deg]")
-% grid on
-
-figure
-plot(t,simulation_estimate_opt.theta.*(180/pi))
-hold on
-figure
-plot(t,simulation.theta.*(180/pi),'--')
-legend('Sim','True')
-title("Theta")
-grid on
-
-
-
-%%
-writematrix(identification_opt{2, 1}.covariance,'Matrice_opt.xls')
-
-%% Varianza PLOT
-figure
-subplot(3,2,1)
-bar([(identification.covariance(1,1)),(identification_opt{2, 1}.covariance(1,1))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Xu_{Task1}','Xu_{opt}'});
-
-grid on
-
-subplot(3,2,2)
-bar([(identification.covariance(2,2)),(identification_opt{2, 1}.covariance(2,2))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Xq_{Task1}','Xq_{opt}'});
-
-grid on
-
-subplot(3,2,3)
-bar([(identification.covariance(3,3)),(identification_opt{2, 1}.covariance(3,3))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Mu_{Task1}','Mu_{opt}'});
-
-grid on
-
-subplot(3,2,4)
-bar([(identification.covariance(4,4)),(identification_opt{2, 1}.covariance(4,4))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Mq_{Task1}','Mq_{opt}'});
-
-grid on
-
-subplot(3,2,5)
-bar([(identification.covariance(5,5)),(identification_opt{2, 1}.covariance(5,5))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Xd_{Task1}','Xd_{opt}'});
-
-grid on
-
-subplot(3,2,6)
-bar([(identification.covariance(6,6)),(identification_opt{2, 1}.covariance(6,6))]);
-title('Variance','Interpreter','latex')
-set(gca,'XTickLabel',{'Md_{Task1}','Md_{opt}'});
-
-grid on
-
+xlabel('Time [s]')
+ylabel('Pitch rate [rad/s]')
+exportStandardizedFigure(gcf,'pitch_rate',0.67, 'addMarkers', false);
 %% Identification problem with input Task1
 clear all
 close all
@@ -421,47 +206,3 @@ for i=31:100
 end
 toc
 
-J_scenario_mean=mean(J_scenario)
-J_scenario_min=min(J_scenario)
-J_scenario_max=max(J_scenario)
-J_scenari_opt_avg_mean=mean(cost_matrix(96,:))
-J_scenari_opt_avg_max=max(cost_matrix(96,:))
-J_scenari_opt_avg_min=min(cost_matrix(96,:))
-
-%save MergeData_with_compare_Input_Task1
-%%
-% %plot errore ma penso che non lo metteremo
-
-% error_estimation_scenario_prof=zeros(6,100)
-% for i=1:100
-%     error_estimation_scenario_prof(:,i)=abs((identification_scenario_input_prof{i, 1}.parameters-real_parameters)./real_parameters);
-% end
-% 
-% 
-% figure
-% hBar=bar3(error_estimation_scenario_prof)
-% colorbar
-% ylabel('Scenario')
-% xlabel('Parameters')
-% zlabel('Error')
-% colorbar
-% 
-% 
-% Xu_error=error_estimation_scenario_prof(1,:);
-% Xq_error=error_estimation_scenario_prof(2,:);
-% Mu_error=error_estimation_scenario_prof(3,:);
-% Mq_error=error_estimation_scenario_prof(4,:);
-% Xd_error=error_estimation_scenario_prof(5,:);
-% Md_error=error_estimation_scenario_prof(6,:);
-% figure
-% plot(Xu_error)
-% hold on
-% plot(Xq_error)
-% hold on
-% plot(Mu_error)
-% hold on
-% plot(Mq_error)
-% hold on
-% plot(Xd_error)
-% hold on
-% plot(Md_error)
