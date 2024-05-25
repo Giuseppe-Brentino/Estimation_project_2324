@@ -133,7 +133,7 @@ title(sprintf('Longitudinal Acceleration. FIT: %.2f %%',identification_opt{1, 1}
 grid on
 xlabel('Time [s]')
 ylabel('Acceleration [$m/s^2$]')
-exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false);
+%exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false);
 
 figure
 plot(t,simulation_estimate_opt.q.Data)
@@ -144,7 +144,7 @@ title(sprintf('Pitch rate. FIT: %.2f %%',identification_opt{1, 1}.fit(1)))
 grid on
 xlabel('Time [s]')
 ylabel('Pitch rate [rad/s]')
-exportStandardizedFigure(gcf,'pitch_rate',0.67, 'addMarkers', false);
+%exportStandardizedFigure(gcf,'pitch_rate',0.67, 'addMarkers', false);
 %% Identification problem with input Task1
 clear all
 close all

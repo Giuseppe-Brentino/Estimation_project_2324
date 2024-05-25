@@ -1,4 +1,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Estimation and Learning in Aerospace Project A.Y. 23-24 
+
+% Authors:  Giuseppe Brentino (giuseppe.brentino@polimi.it)
+%           Isabelle Marie Françoise Confalonieri (isabellemarie.confalonieri@polimi.it)                     
+%           Francesco Javier Sguazzini (francescojavier.sguazzini@polimi.it)                                                   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clearvars;
@@ -10,9 +15,10 @@ rng default;
 addpath('datasets','common','common/simulator-toolbox','common/simulator-toolbox/attitude_library','common/simulator-toolbox/trajectory_library');
 addpath('functions');
 addpath('FILE_SAVE');
-%FOR TASK 1: load(Task_1.mat)
-%FOR TASK 2: load(MergeData.mat)
-
+%FOR TASK 1: 
+% load("Task_1.mat")
+%FOR TASK 2:
+%load("MergeData.mat")
 %% Model parameters
 
 % Initial model (state: longitudinal velocity, pitch rate, pitch angle; input: normalised pitching moment; outputs: state and longitudinal acceleration)
@@ -145,8 +151,7 @@ set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
 ylabel('error [%]')
 ylim([-0.12 0.15])
 grid on
-%exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
-        'WHratio', 1.3)
+%exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, 'WHratio', 1.3)
 
 % COMPARE
  wmin = -3;  wmax =3;  Npoints = 1000;   
@@ -228,12 +233,11 @@ for i = 1:length(a)
     set(a(i), 'linewidth',2);  %change linewidth
 end
 set(gca,'color','w');
-%exportStandardizedFigure(gcf,'pz_plot',0.67, 'addMarkers', false, ...
-     'WHratio', 1.3)
+%exportStandardizedFigure(gcf,'pz_plot',0.67, 'addMarkers', false,'WHratio', 1.3)
 
 %% TASK 2
 
-N_scenarios = 70;  % number of scenarios
+N_scenarios = 100;  % number of scenarios
 N_ic = 5;   % number of initial guesses for each optimization problem
 N_sim = N_scenarios*N_ic;
 
@@ -581,19 +585,22 @@ set(gca,'CLim',[0 0.6]);
 %exportStandardizedFigure(gcf,'J3D_top_view',1, 'addMarkers', false, 'WHratio',1)
 
 %% FIT PLOT
-addpath('FILE_SAVE');
-load("out_simulink.mat") %TRUE MODEL
-load("simulation_estimate_opt.mat") %ESTIMATED MODEL
-% ExcitationM=ExcitationM_WC;
-% t=ExcitationM(:,1);
+% addpath('FILE_SAVE');
+% load("out_simulink.mat") %TRUE MODEL
+% load("simulation_estimate_opt.mat") %ESTIMATED MODEL
 % 
-% simulation_time=t(end)-t(1); 
- %out= sim('Simulator_Single_Axis','SrcWorkspace', 'current'); %it use A, B, C, D of True Model 
- % A=identification_opt{1, 1}.matrix{1};
- % B=identification_opt{1, 1}.matrix{2};
- % C = [1 0 0 ; identification_opt{1, 1}.matrix{3}(1,:) ; 0 0 1 ; identification_opt{1, 1}.matrix{3}(2,:)];
- % D = [0; 0 ; identification_opt{1, 1}.matrix{4}];
- % simulation_estimate_opt = sim('Simulator_Single_Axis','SrcWorkspace', 'current'); 
+
+ExcitationM=ExcitationM_WC;
+
+t=ExcitationM(:,1);
+
+simulation_time=t(end)-t(1); 
+ out= sim('Simulator_Single_Axis','SrcWorkspace', 'current'); %it use A, B, C, D of True Model 
+ A=identification_opt{1, 1}.matrix{1};
+ B=identification_opt{1, 1}.matrix{2};
+ C = [1 0 0 ; identification_opt{1, 1}.matrix{3}(1,:) ; 0 0 1 ; identification_opt{1, 1}.matrix{3}(2,:)];
+ D = [0; 0 ; identification_opt{1, 1}.matrix{4}];
+ simulation_estimate_opt = sim('Simulator_Single_Axis','SrcWorkspace', 'current'); 
 
 figure
 plot(simulation_estimate_opt.ax)
@@ -616,6 +623,9 @@ grid on
 xlabel('Time [s]')
 ylabel('Pitch rate [rad/s]')
 %exportStandardizedFigure(gcf,'pitch_rate',0.67, 'addMarkers', false);
+
+
+
 %% Variance Plot
 
 figure
@@ -683,6 +693,5 @@ xlabel('$f_1$ [rad/s]')
 ylabel('$f_2$ [rad/s]')
 legend
 %exportStandardizedFigure(gcf,'scatterPlot',0.67, 'addMarkers', false,'WHratio',1,'changecolors',false)
-
 
 %% END OF CODE
