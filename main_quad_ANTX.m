@@ -1,16 +1,4 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% ANT-X SIMULATOR - MAIN                                                  %
-% Authors:  Mattia Giurato (mattia.giurato@polimi.it)                     %
-%           Paolo Gattazzo (paolo.gattazzo@polimi.it)                     %
-% Date: 13/12/2017                                                        %
-% Adapted to ANT-X 2DoF by:  Salvatore Meraglia (salvatore.meraglia@polimi.it)%
-% Date: 22/12/2022                                                        %
-%
-% Further modified to include structure three-state identified longitudinal model
-% 06/01/23 ML
-%
-% Further modified to pick outputs with measurement error
-% 03/01/24 ML
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 clearvars;
@@ -21,6 +9,9 @@ rng default;
 
 addpath('datasets','common','common/simulator-toolbox','common/simulator-toolbox/attitude_library','common/simulator-toolbox/trajectory_library');
 addpath('functions');
+addpath('FILE_SAVE');
+%FOR TASK 1: load(Task_1.mat)
+%FOR TASK 2: load(MergeData.mat)
 
 %% Model parameters
 
@@ -133,7 +124,7 @@ xlabel('Time [s]')
 ylabel('Acceleration [$m/s^2$]')
 legend('Real model','Estimated model')
 title(sprintf('Longitudinal Acceleration. FIT: %.2f %%',identification.fit(2)));
-exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false)
 
 pitch_rate_plot = figure;
 hold on
@@ -145,7 +136,7 @@ axis tight
 xlabel('Time [s]')
 ylabel('Pitch rate [rad/s]')
 legend('Real model','Estimated model')
-exportStandardizedFigure(gcf,'pitchrate',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'pitchrate',0.67, 'addMarkers', false)
 
 error_plot = figure;
 bar(estimation_error);
@@ -154,7 +145,7 @@ set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
 ylabel('error [%]')
 ylim([-0.12 0.15])
 grid on
-exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
+%exportStandardizedFigure(gcf,'error_plot',0.67, 'addMarkers', false, ...
         'WHratio', 1.3)
 
 % COMPARE
@@ -187,7 +178,7 @@ xlabel('Frequency [rad/s]')
 ylabel('Pitch rate [dB]')
 legend;
 
-exportStandardizedFigure(gcf,'bode',0.67, 'addMarkers', false,'WHRatio',0.7)
+%exportStandardizedFigure(gcf,'bode',0.67, 'addMarkers', false,'WHRatio',0.7)
 
 % Z-P PLOT
 est_sys = ss(identification.matrix{1}, identification.matrix{2}, identification.matrix{3}, identification.matrix{4});
@@ -237,7 +228,7 @@ for i = 1:length(a)
     set(a(i), 'linewidth',2);  %change linewidth
 end
 set(gca,'color','w');
-exportStandardizedFigure(gcf,'pz_plot',0.67, 'addMarkers', false, ...
+%exportStandardizedFigure(gcf,'pz_plot',0.67, 'addMarkers', false, ...
      'WHratio', 1.3)
 
 %% TASK 2
@@ -454,7 +445,7 @@ legend('Mean cost','Trend');
 ylabel('Mean');
 xlabel('Iterations')
 title('Mean cost evolution')
-exportStandardizedFigure(gcf,'mean_cost_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'mean_cost_plot',0.67, 'addMarkers', false)
 
 % std
 filtered_std = movmean(std_cost,10);
@@ -468,7 +459,7 @@ legend('Cost standard deviation','Trend');
 ylabel('Standard Deviation');
 xlabel('Iterations')
 title('Standard deviation evolution')
-exportStandardizedFigure(gcf,'std_cost_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'std_cost_plot',0.67, 'addMarkers', false)
 
 
 % Comparison of estimation error
@@ -482,14 +473,14 @@ title('Estimation error','Interpreter','latex')
 set(gca,'XTickLabel',{'Xu','Xq','Mu','Mq','Xd','Md'});
 ylim([0 0.15])
 legend('Initial Input','Input $\eta_{opt}$')
-exportStandardizedFigure(gcf,'error_opt_hist_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'error_opt_hist_plot',0.67, 'addMarkers', false)
 
 %Cost distribution
 figure
 histogram(cost,nbins)
 xlabel('Cost')
 ylabel('Number of occurrencies')
-exportStandardizedFigure(gcf,'Cost_dist_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'Cost_dist_plot',0.67, 'addMarkers', false)
 
 % Input data distribution
 figure
@@ -497,21 +488,21 @@ histogram(eta_matrix(1,:),nbins)
 grid on
 xlabel('$f_1$ [Hz]')
 ylabel('Number of occurencies')
-exportStandardizedFigure(gcf,'f1_dist_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'f1_dist_plot',0.67, 'addMarkers', false)
 
 figure
 histogram(eta_matrix(2,:),nbins)
 grid on
 xlabel('$f_2$ [Hz]')
 ylabel('Number of occurencies')
-exportStandardizedFigure(gcf,'f2_dist_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'f2_dist_plot',0.67, 'addMarkers', false)
 
 figure
 histogram(eta_matrix(3,:),nbins)
 grid on
 xlabel('T [s]')
 ylabel('Number of occurencies')
-exportStandardizedFigure(gcf,'T_dist_plot',0.67, 'addMarkers', false)
+%exportStandardizedFigure(gcf,'T_dist_plot',0.67, 'addMarkers', false)
 
 %Plot Input ETA_AVG
 
@@ -556,8 +547,7 @@ plot(ExcitationM_WC(:,1),ExcitationM_WC(:,2))
 xlabel('Time [s]')
 ylabel('Normalized moment [-]')
 title('Optimal excitation moment')
-exportStandardizedFigure(gcf,'excitation_opt_plot',1, 'addMarkers', false, ...
-  'WHratio',3)
+%exportStandardizedFigure(gcf,'excitation_opt_plot',1, 'addMarkers', false, 'WHratio',3)
 
 %bar plot scenario-eta-cost
 figure
@@ -574,8 +564,7 @@ zlabel('Cost')
 set(gca,'CLim',[0 0.6]);
 view(62,22)
 ylim([0 100])
-exportStandardizedFigure(gcf,'J3D',1, 'addMarkers', false, ...
-  'WHratio',1)
+%exportStandardizedFigure(gcf,'J3D',1, 'addMarkers', false, 'WHratio',1)
 
 figure
 b=bar3(cost_matrix);
@@ -589,9 +578,98 @@ zlabel('Cost')
 ylim([0 100])
 view(-90,90)
 set(gca,'CLim',[0 0.6]);
-exportStandardizedFigure(gcf,'J3D_top_view',1, 'addMarkers', false, ...
-  'WHratio',1)
-%% Scatter plot
+%exportStandardizedFigure(gcf,'J3D_top_view',1, 'addMarkers', false, 'WHratio',1)
+
+%% FIT PLOT
+addpath('FILE_SAVE');
+load("out_simulink.mat") %TRUE MODEL
+load("simulation_estimate_opt.mat") %ESTIMATED MODEL
+% ExcitationM=ExcitationM_WC;
+% t=ExcitationM(:,1);
+% 
+% simulation_time=t(end)-t(1); 
+ %out= sim('Simulator_Single_Axis','SrcWorkspace', 'current'); %it use A, B, C, D of True Model 
+ % A=identification_opt{1, 1}.matrix{1};
+ % B=identification_opt{1, 1}.matrix{2};
+ % C = [1 0 0 ; identification_opt{1, 1}.matrix{3}(1,:) ; 0 0 1 ; identification_opt{1, 1}.matrix{3}(2,:)];
+ % D = [0; 0 ; identification_opt{1, 1}.matrix{4}];
+ % simulation_estimate_opt = sim('Simulator_Single_Axis','SrcWorkspace', 'current'); 
+
+figure
+plot(simulation_estimate_opt.ax)
+hold on
+plot(out.ax,'--')
+legend('Estimated model','Real model')
+title(sprintf('Longitudinal Acceleration. FIT: %.2f %%',identification_opt{1, 1}.fit(2)))
+grid on
+xlabel('Time [s]')
+ylabel('Acceleration [$m/s^2$]')
+%exportStandardizedFigure(gcf,'long_acc',0.67, 'addMarkers', false);
+
+figure
+plot(simulation_estimate_opt.q)
+hold on
+plot(out.q,'--')
+legend('Estimated model','Real model')
+title(sprintf('Pitch rate. FIT: %.2f %%',identification_opt{1, 1}.fit(1)))
+grid on
+xlabel('Time [s]')
+ylabel('Pitch rate [rad/s]')
+%exportStandardizedFigure(gcf,'pitch_rate',0.67, 'addMarkers', false);
+%% Variance Plot
+
+figure
+subplot(2,3,1)
+bar([(identification.covariance(1,1)),(identification_opt{2, 1}.covariance(1,1))],'FaceAlpha',.85,'FaceColor',[0.56,0.61,0.80],'EdgeColor',[0.30,0.33,0.44]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Xu_{Task1}','Xu_{opt}'});
+set(gca,'XTickLabel',{'Xu_{Task1}','Xu_{opt}'},'fontname','Palatino Linotype');
+
+grid on
+
+subplot(2,3,2)
+bar([(identification.covariance(2,2)),(identification_opt{2, 1}.covariance(2,2))],'FaceAlpha',.85,'FaceColor',[0.56,0.61,0.80],'EdgeColor',[0.30,0.33,0.44]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Xq_{Task1}','Xq_{opt}'});
+set(gca,'XTickLabel',{'Xq_{Task1}','Xq_{opt}'},'fontname','Palatino Linotype');
+
+grid on
+
+subplot(2,3,3)
+bar([(identification.covariance(3,3)),(identification_opt{2, 1}.covariance(3,3))],'FaceAlpha',.85,'FaceColor',[0.56,0.61,0.80],'EdgeColor',[0.30,0.33,0.44]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Mu_{Task1}','Mu_{opt}'});
+set(gca,'XTickLabel',{'Mu_{Task1}','Mu_{opt}'},'fontname','Palatino Linotype');
+
+grid on
+
+subplot(2,3,4)
+bar([(identification.covariance(4,4)),(identification_opt{2, 1}.covariance(4,4))],'FaceAlpha',.85,'FaceColor',[0.56,0.61,0.80],'EdgeColor',[0.30,0.33,0.44]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Mq_{Task1}','Mq_{opt}'});
+set(gca,'XTickLabel',{'Mq_{Task1}','Mq_{opt}'},'fontname','Palatino Linotype');
+
+grid on
+
+subplot(2,3,5)
+bar([(identification.covariance(5,5)),(identification_opt{2, 1}.covariance(5,5))],'FaceAlpha',.85,'FaceColor',[0.56,0.61,0.80],'EdgeColor',[0.30,0.33,0.44]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Xd_{Task1}','Xd_{opt}'});
+set(gca,'XTickLabel',{'Xd_{Task1}','Xd_{opt}'},'fontname','Palatino Linotype');
+
+grid on
+
+subplot(2,3,6)
+bar([(identification.covariance(6,6)),(identification_opt{2, 1}.covariance(6,6))],'FaceAlpha',.85,'FaceColor',[0.56,0.61,0.80],'EdgeColor',[0.30,0.33,0.44]);
+title('Variance','Interpreter','latex')
+set(gca,'XTickLabel',{'Md_{Task1}','Md_{opt}'});
+set(gca,'XTickLabel',{'Md_{Task1}','Md_{opt}'},'fontname','Palatino Linotype');
+
+grid on
+
+  
+  %% Scatter plot
+
 cost_scatter=cost';
 figure  
 hold on
@@ -604,9 +682,7 @@ grid on
 xlabel('$f_1$ [rad/s]')
 ylabel('$f_2$ [rad/s]')
 legend
-exportStandardizedFigure(gcf,'scatterPlot',0.67, 'addMarkers', false, ...
-  'WHratio',1,'changecolors',false)
-
+%exportStandardizedFigure(gcf,'scatterPlot',0.67, 'addMarkers', false,'WHratio',1,'changecolors',false)
 
 
 %% END OF CODE

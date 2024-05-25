@@ -17,7 +17,7 @@ t=ExcitationM(:,1);
 
 simulation_time=t(end)-t(1); 
 
-out = sim('Simulator_Single_Axis','SrcWorkspace', 'current'); %usa A, B, C, D del sistema originale 
+out = sim('Simulator_Single_Axis','SrcWorkspace', 'current'); %it use A, B, C, D of the original system
 
 x = out.x_vero.Data(1:5:end);
 t_x = out.x_vero.Time(1:5:end);
